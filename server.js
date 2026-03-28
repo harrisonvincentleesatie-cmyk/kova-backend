@@ -8,7 +8,17 @@ app.use(express.json({ limit: "10mb" }));
 
 app.post("/analyze", (req, res) => {
   res.json({
-    result: "TEST SUCCESS — backend is connected"
+    whatThisReallyMeans: "This is a test — backend is connected.",
+    impactLine: "No real risk, just confirming connection.",
+    riskLevel: "Low",
+    riskRead: "This is just a test response.",
+    whatToDo: [
+      "Do nothing",
+      "Confirm system works",
+      "Proceed to next step"
+    ],
+    sayThis: "Test reply.",
+    whatTheyWant: "Nothing — this is just a connection test."
   });
 });
 
