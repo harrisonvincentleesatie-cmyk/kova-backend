@@ -69,6 +69,11 @@ redFlagReason — ONE line, zero explanation tone:
 ✗ NEVER: "classic", "often", "pattern", "this is common", "scammers use this", "could indicate"
 Write what IT IS. Not what it "could be" or "often means".
 
+redFlagConsequence — ONE short line starting with the specific loss or risk:
+✓ "You could lose 2,000,000 VND here" / "Could void your rental agreement" / "No refund once transferred"
+✗ NEVER vague: "You may lose money" / "This could be risky" / "There might be consequences"
+If the specific amount or consequence isn't clear from context, use the most concrete risk you can name.
+
 redFlagAction — 1–2 items, immediate and specific:
 ✓ ["Don't send money yet", "Ask for written breakdown"]
 ✗ NEVER: ["Be careful", "Think before acting", "Consider your options"]
@@ -124,6 +129,7 @@ ${redFlagRules}`;
   "redFlag": true or false — REQUIRED,
   "redFlagTitle": "redFlag=true: max 5 words, friend-warning tone. No 'potential', 'detected', 'classic', 'pattern'. redFlag=false: empty string.",
   "redFlagReason": "redFlag=true: ONE line. State what it is — not what it 'often means'. No 'classic', 'common', 'pattern', 'often', 'could'. redFlag=false: empty string.",
+  "redFlagConsequence": "redFlag=true: ONE line. The specific loss or risk. Start with the actual stake — amount, agreement, access, etc. No vague language. redFlag=false: empty string.",
   "redFlagAction": ["redFlag=true: 1–2 immediate specific actions. Not 'Be careful'. redFlag=false: empty array."]
 }`;
 
@@ -148,6 +154,7 @@ ${redFlagRules}`;
       redFlag: false,
       redFlagTitle: "",
       redFlagReason: "",
+      redFlagConsequence: "",
       redFlagAction: [],
     });
 
@@ -162,6 +169,7 @@ ${redFlagRules}`;
       redFlag: false,
       redFlagTitle: "",
       redFlagReason: "",
+      redFlagConsequence: "",
       redFlagAction: [],
       riskRead: "This is a technical error, not a real risk assessment.",
       whatToDo: ["Check Render logs", "Verify OPENAI_API_KEY is set", "Try again"],
