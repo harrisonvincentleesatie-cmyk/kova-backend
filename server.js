@@ -37,47 +37,28 @@ app.post("/analyze", async (req, res) => {
     const { image } = req.body;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4.1-mini",
       messages: [
         {
           role: "system",
-          content: `You are Kova. You read real conversations and tell people exactly what is happening and what to say next.
+          content: `You are Kova. Analyse the screenshot and return ONLY a valid JSON object — no markdown, no extra text.
 
-STEP 1 — READ THE CONVERSATION CORRECTLY:
-- Identify which messages are from the USER and which are from the OTHER PERSON
-- Use visual layout as a guide: in WhatsApp, green/right = user, grey/left = other person
-- Find the MOST RECENT message from the other person — this is what needs a reply
-- Use earlier messages only as context
-
-STEP 2 — FOCUS ON THE LATEST MESSAGE:
-- Your entire analysis is about what the other person JUST said
-- Do not respond to earlier messages
-- Do not mix multiple intents from different points in the conversation
-
-STEP 3 — RETURN ONLY A VALID JSON OBJECT. No markdown, no code blocks, no extra text.
+Focus on the MOST RECENT message from the other person. Use earlier messages only as context.
+In WhatsApp: green/right = user, grey/left = other person.
+Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.
 
 {
-  "whatThisReallyMeans": "What the other person just said — the real intent behind their latest message, not what they literally wrote. 1–2 sharp sentences.",
-  "impactLine": "One sentence. What happens if the user responds badly to this specific message.",
+  "whatThisReallyMeans": "Real intent behind their latest message. 1–2 sharp sentences.",
+  "impactLine": "What happens if the user responds badly. One sentence.",
   "riskLevel": "Low" or "Medium" or "High",
-  "riskRead": "One sentence explaining the risk level of this moment.",
-  "whatToDo": ["Action based on latest message", "Action", "Action"],
+  "riskRead": "One sentence on the risk level.",
+  "whatToDo": ["Action", "Action", "Action"],
   "sayThis": {
-    "native": "The reply to the other person's LATEST message. Detect the conversation language and write in that language — how a real local speaker would say it. Match the register of the relationship. If unclear, use English.",
-    "english": "Plain English meaning of the native reply. If native is already English, write a natural rephrasing."
+    "native": "Reply in the conversation's language. Natural, not translated.",
+    "english": "Plain English meaning. Rephrase if already English."
   },
-  "whatTheyWant": "One sentence. What the other person is trying to get from this latest message."
-}
-
-Rules:
-- Always focus on the most recent message, not the full conversation
-- Detect and match the conversation language — never default to Vietnamese unless the screenshot is in Vietnamese
-- Do not invent hierarchy or relationships not visible in the screenshot
-- No corporate language: escalate, loop in, circle back, touch base
-- The reply must sound like a real person, not a translator
-- Tone by context: landlord = polite but firm / work = calm and direct / casual = natural
-- No dramatic language, no invented urgency
-- Commit to one read`,
+  "whatTheyWant": "What the other person wants from this message. One sentence."
+}`,
         },
         {
           role: "user",
@@ -104,7 +85,7 @@ Rules:
       riskLevel: "Low",
       riskRead: "Unable to assess — image may be unreadable.",
       whatToDo: ["Upload a clearer screenshot", "Ensure text is visible", "Try again"],
-      sayThis: { vietnamese: "Không thể tạo phản hồi.", english: "Unable to generate a reply." },
+      sayThis: { native: "Unable to generate a reply.", english: "Unable to generate a reply." },
       whatTheyWant: "Unknown.",
     });
 
@@ -131,36 +112,25 @@ app.post("/say", async (req, res) => {
     const { text, tone } = req.body;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-4.1-mini",
       messages: [
         {
           role: "system",
-          content: `You are a cultural communication expert. You help people say things naturally in any language.
+          content: `You help people say things naturally in any language. Write what a real local person would say — idiomatic, correct register.
 
-Your job is NOT to translate literally. Write what a real local person would actually say — idiomatically, with the right social register.
-
-The user will describe what they want to say, in any language. Detect the language of their input and reply in THAT language. Never default to Vietnamese unless the input is in Vietnamese.
-
-Return ONLY a valid JSON object. No markdown. No explanation outside the JSON.
+Detect the language of the user's input and reply in THAT language. Never default to Vietnamese unless the input is in Vietnamese.
+Return ONLY a valid JSON object. No markdown.
 
 {
-  "native": "The message in the same language as the user's input. Natural phrasing for a real local speaker. Match the tone.",
-  "english": "Plain English meaning. If native is already English, write a natural rephrasing.",
-  "toneExplain": "One sentence describing how this sounds socially in that culture.",
+  "native": "Natural phrasing in the user's language, matching the tone.",
+  "english": "Plain English meaning. Rephrase if already English.",
+  "toneExplain": "One sentence on how this sounds socially.",
   "variations": {
-    "softer": "A softer version in the same language.",
-    "direct": "A more direct version in the same language.",
-    "shorter": "A shorter version in the same language."
+    "softer": "Softer version.",
+    "direct": "More direct version.",
+    "shorter": "Shorter version."
   }
-}
-
-Tone guide:
-- Polite: formal register, deferential but clear
-- Casual: relaxed, natural between peers or friends
-- Firm: direct, minimal softening, gets action
-
-Context matters: dating, work, housing, family — adjust accordingly.
-Sound like a person. Never robotic. Never textbook.`,
+}`,
         },
         {
           role: "user",
