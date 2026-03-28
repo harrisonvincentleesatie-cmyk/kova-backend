@@ -184,6 +184,22 @@ ${longGameRules}`;
       longGame: [],
     });
 
+    // Sanitise — guarantee every field the frontend depends on
+    if (typeof parsed.redFlag !== "boolean") parsed.redFlag = false;
+    if (!parsed.redFlagTitle)     parsed.redFlagTitle = "";
+    if (!parsed.redFlagReason)    parsed.redFlagReason = "";
+    if (!parsed.redFlagConsequence) parsed.redFlagConsequence = "";
+    if (!Array.isArray(parsed.redFlagAction)) parsed.redFlagAction = [];
+    if (!parsed.riskLevel)        parsed.riskLevel = "Low";
+    if (!parsed.sayThis || typeof parsed.sayThis !== "object") {
+      parsed.sayThis = { native: "", english: "", tone: "" };
+    }
+    if (!parsed.sayThis.tone)     parsed.sayThis.tone = "";
+    if (!Array.isArray(parsed.longGame)) parsed.longGame = [];
+    parsed.longGame = parsed.longGame.filter(
+      (m) => m && typeof m.scenario === "string" && typeof m.action === "string" && typeof m.reply === "string"
+    );
+
     res.json(parsed);
 
   } catch (err) {
