@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
 
 app.post("/analyze", async (req, res) => {
   try {
-    const { image, croppedImage, selectedMessage, tapX, tapY } = req.body;
+    const { image, selectedMessageImage, croppedImage, selectedMessage, tapX, tapY } = req.body;
 
     const coreRules = `
 ────────────────────────────────────────────────────────
@@ -297,7 +297,17 @@ If these conflict:
 → Accuracy > Tone > Style
 ────────────────────────────────────────────────────────`;
 
-    const systemPrompt = selectedMessage
+    const systemPrompt = selectedMessageImage
+      ? `You are given TWO images:
+1. SELECTED MESSAGE — the exact region the user manually highlighted. This is the ONLY message to analyze and reply to.
+2. FULL SCREENSHOT — background context only. Use it for tone, relationship, and language. Do NOT respond to anything outside image 1.
+
+The selected message is incoming — written by the other person to the user.
+Generate a reply FROM the user back to the selected message only.
+Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.
+
+${coreRules}`
+      : selectedMessage
       ? `The user selected this exact message: "${selectedMessage}"
 
 This is the ONLY message to analyze and reply to.
@@ -327,11 +337,15 @@ Detect the conversation language and reply in that language. Never default to Vi
 
 ${coreRules}`;
 
-    const userContent = [
-      { type: "text", text: croppedImage ? "Selected message (image 1). Full conversation (image 2)." : "Analyse this screenshot." },
-    ];
-    if (croppedImage) {
+    const userContent = [];
+    if (selectedMessageImage) {
+      userContent.push({ type: "text", text: "Image 1: selected message. Image 2: full screenshot for context." });
+      userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${selectedMessageImage}` } });
+    } else if (croppedImage) {
+      userContent.push({ type: "text", text: "Selected message (image 1). Full conversation (image 2)." });
       userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${croppedImage}` } });
+    } else {
+      userContent.push({ type: "text", text: "Analyse this screenshot." });
     }
     userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
@@ -423,6 +437,33 @@ ${coreRules}`;
       sayThis: { native: "There was an error. Please try again.", english: "There was an error. Please try again." },
       whatTheyWant: "System error.",
     });
+  }
+});
+
+// ── /ocr — extract text from a cropped image ──────────────────────────────────
+
+app.post("/ocr", async (req, res) => {
+  try {
+    const { image } = req.body;
+    const response = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      max_tokens: 300,
+      messages: [
+        {
+          role: "system",
+          content: `Extract the exact text content from this chat message image. Return ONLY the raw message text as it appears — nothing else. No quotes, no labels, no explanation. If multiple messages are visible, extract only the most prominent/central one.`,
+        },
+        {
+          role: "user",
+          content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } }],
+        },
+      ],
+    });
+    const text = response.choices[0].message.content?.trim() ?? "";
+    res.json({ text });
+  } catch (err) {
+    console.error("/ocr error:", err.message);
+    res.json({ text: "" });
   }
 });
 
