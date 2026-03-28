@@ -71,14 +71,30 @@ Rules:
       parsed = JSON.parse(raw);
     } catch (parseErr) {
       console.error("Failed to parse OpenAI response as JSON:", raw);
-      return res.status(500).json({ error: "OpenAI returned unexpected format" });
+      return res.json({
+        whatThisReallyMeans: "ERROR",
+        impactLine: "OpenAI returned an unexpected format.",
+        riskLevel: "Error",
+        riskRead: "The backend failed to process the image.",
+        whatToDo: ["Check logs", "Fix OpenAI request"],
+        sayThis: "There was an error processing your request.",
+        whatTheyWant: "System error",
+      });
     }
 
     res.json(parsed);
 
   } catch (err) {
-    console.error("OpenAI call failed:", err.message);
-    res.status(500).json({ error: "OpenAI call failed: " + err.message });
+    console.error("OpenAI call failed — full error:", err);
+    res.json({
+      whatThisReallyMeans: "ERROR",
+      impactLine: err.message,
+      riskLevel: "Error",
+      riskRead: "The backend failed to process the image.",
+      whatToDo: ["Check logs", "Fix OpenAI request"],
+      sayThis: "There was an error processing your request.",
+      whatTheyWant: "System error",
+    });
   }
 });
 
