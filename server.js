@@ -109,6 +109,40 @@ Detect the conversation language and reply in that language. Never default to Vi
   }
 });
 
+// ── /refine — refine a generated reply ────────────────────────────────────────
+
+app.post("/refine", async (req, res) => {
+  try {
+    const { native, english, instruction } = req.body;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You refine conversation replies. Given an existing reply and an instruction, apply the instruction and return ONLY a valid JSON object — no markdown, no extra text.
+
+Keep the reply in the same language as the original "native" text unless instructed otherwise.
+
+{ "native": "Refined reply in original language.", "english": "Plain English meaning." }`,
+        },
+        {
+          role: "user",
+          content: `Current reply: "${native}"\nEnglish meaning: "${english}"\nInstruction: ${instruction}`,
+        },
+      ],
+    });
+
+    const raw = response.choices[0].message.content;
+    const parsed = parseJSON(raw, { native, english });
+    res.json(parsed);
+
+  } catch (err) {
+    console.error("/refine error:", err.message);
+    res.json({ native: req.body.native, english: req.body.english });
+  }
+});
+
 // ── /say — natural Vietnamese phrasing ────────────────────────────────────────
 
 app.post("/say", async (req, res) => {
