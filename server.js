@@ -34,11 +34,11 @@ app.get("/", (req, res) => {
 
 app.post("/analyze", async (req, res) => {
   try {
-    const { image, role } = req.body;
+    const { image, tapX, tapY } = req.body;
 
-    const roleInstruction = role === 'sender'
-      ? `The user sent the last message. The other person has not replied yet. Generate the next message the user should send to move the conversation forward.`
-      : `The user received the last message. Generate a reply from the user back to that message.`;
+    const tapContext = (tapX != null && tapY != null)
+      ? `The user tapped at approximately ${tapX}% from the left and ${tapY}% from the top of the image. Focus your analysis on the message in that region.`
+      : `Focus on the last message visible in the screenshot.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
@@ -47,29 +47,28 @@ app.post("/analyze", async (req, res) => {
           role: "system",
           content: `You are Kova. Analyse the screenshot and return ONLY a valid JSON object — no markdown, no extra text.
 
-ROLE CONTEXT: ${roleInstruction}
+TARGET: ${tapContext}
 
 HOW TO REASON:
-1. Find the last message in the conversation — the most recent thing said
-2. Apply the role context above to determine perspective
-3. Generate the next message accordingly
-4. Use all earlier messages only for tone, relationship, and context
+1. Identify the message at or near the tapped region — this is the message to analyse
+2. Treat that message as incoming — written by the other person
+3. Generate a reply FROM the user back to that specific message
+4. Use all other messages only for tone, relationship, and context
 
-Never reply to an earlier message. Never generate a message from the wrong perspective.
-
+Do not reply to any other message. Do not guess based on colors or layout.
 Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.
 
 {
-  "whatThisReallyMeans": "Real intent behind the last message. 1–2 sharp sentences.",
-  "impactLine": "What happens if the next message is wrong. One sentence.",
+  "whatThisReallyMeans": "Real intent behind the selected message. 1–2 sharp sentences.",
+  "impactLine": "What happens if the user responds badly. One sentence.",
   "riskLevel": "Low" or "Medium" or "High",
   "riskRead": "One sentence on the risk level.",
   "whatToDo": ["Action", "Action", "Action"],
   "sayThis": {
-    "native": "The next message to send. In the conversation's language. Natural, not translated.",
+    "native": "The user's reply to the selected message. In the conversation's language. Natural, not translated.",
     "english": "Plain English meaning. Rephrase if already English."
   },
-  "whatTheyWant": "What the other person wants in this conversation right now. One sentence."
+  "whatTheyWant": "What the sender of the selected message wants. One sentence."
 }`,
         },
         {
