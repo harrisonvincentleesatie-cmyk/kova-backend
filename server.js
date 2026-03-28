@@ -44,6 +44,38 @@ RULES FOR EVERY FIELD:
 - Be concise. Cut any word that doesn't add meaning.
 - Sound human. Write like a sharp friend, not a customer service bot.`;
 
+    const redFlagRules = `
+─── RED FLAG DETECTION (run FIRST, before risk level) ───────────────────────
+
+You MUST always return all four fields: redFlag, redFlagTitle, redFlagReason, redFlagAction.
+
+Step 1 — Scan the message for ANY of these:
+• Price or amount changed without explanation
+• Urgency pressure: "pay now", "last chance", "today only", "by end of day"
+• A fee or charge that was never mentioned before
+• Request to pay a person or account that isn't the expected official party
+• Emotional pressure: guilt, urgency, flattery used to rush a decision
+• Evasive answers — dodging a direct question about price, timeline, or terms
+• Information that contradicts something said earlier in the conversation
+• Anything that would confuse or mislead someone unfamiliar with local norms
+
+Step 2 — Decide:
+IF any pattern above is present → redFlag = true. Be decisive. Do not sit on the fence.
+Urgent payment requests and unexplained fees ALWAYS trigger redFlag = true. No exceptions.
+
+IF redFlag = true, write:
+- redFlagTitle: max 5 words, conversational, punchy. Sounds like something a smart friend would say out loud. Examples: "Fee wasn't mentioned before" / "Price changed suddenly" / "This doesn't add up" / "They're rushing you — slow down". NO percentages. NO "potential". NO "detected". NO robotic phrasing.
+- redFlagReason: ONE sentence. Explain what the tactic is and why it matters. Include cultural or local context when relevant — e.g. "Maintenance fees go to the building management, not the landlord." Confident tone. No hedging.
+- redFlagAction: Array of 1–2 specific actions the user can take RIGHT NOW. Be concrete, not generic. Good: ["Ask for an itemised breakdown in writing", "Do not transfer until you have a receipt"]. Bad: ["Be cautious", "Think carefully"].
+
+IF nothing suspicious:
+- redFlag = false
+- redFlagTitle = ""
+- redFlagReason = ""
+- redFlagAction = []
+
+Normal back-and-forth, polite delays, or standard negotiation are NOT red flags.`;
+
     const systemPrompt = croppedImage
       ? `You are Kova — a sharp social intelligence engine. Return ONLY a valid JSON object — no markdown, no extra text.
 
@@ -73,30 +105,6 @@ ${redFlagRules}`;
     }
     userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
-    const redFlagRules = `
-RED FLAG DETECTION — run this check on EVERY message:
-
-Scan for:
-- Price changed without explanation
-- Urgency pressure: "pay now", "last chance", "today only"
-- Fees that weren't mentioned before
-- Requests to pay someone unusual (not the official party)
-- Emotional pressure: guilt, fear, flattery to bypass thinking
-- Answers that dodge the actual question
-- Information that contradicts something said earlier
-- Anything that would confuse a newcomer unfamiliar with local norms
-
-IF a red flag is found:
-- redFlag = true
-- redFlagTitle: max 5 words, conversational, punchy. Examples: "Fee wasn't mentioned before" / "Price changed suddenly" / "This doesn't add up". NO percentages, NO "potential", NO "detected".
-- redFlagReason: ONE sentence. Sound like a smart local explaining it to a friend. Include cultural or local context if relevant (e.g. "Maintenance fees go to the building, not the landlord"). No hedging. No filler.
-- redFlagAction: Array of 1–2 short actions the user can take RIGHT NOW. Specific, not generic. E.g. ["Ask for an itemised breakdown", "Do not transfer until you have a receipt"] NOT ["Be cautious"].
-
-IF nothing suspicious:
-- redFlag = false, redFlagTitle = "", redFlagReason = "", redFlagAction = []
-
-ONLY flag when it actually matters. Normal negotiation, politeness, or small delays are NOT red flags.`;
-
     const jsonSchema = `{
   "summary": "One line, max 10 words. The single most important thing about this message. No subject pronoun needed. Examples: 'Routine charge — nothing unusual' / 'Delaying — no clear timeline given' / 'Polite but non-committal'.",
   "whatThisReallyMeans": "What they're actually doing socially — not a literal description. 1–2 sharp sentences. Start with what's really happening, not what was said.",
@@ -110,10 +118,10 @@ ONLY flag when it actually matters. Normal negotiation, politeness, or small del
     "tone": "2–3 short human descriptors for the tone of the reply, joined with ' • '. Examples: 'Direct • Calm • Controlled' / 'Polite • Warm • Clear' / 'Playful • Light • Easy'. No technical jargon."
   },
   "whatTheyWant": "",
-  "redFlag": true or false,
-  "redFlagTitle": "Short human title if redFlag=true, else empty string. No percentages. No 'potential'.",
-  "redFlagReason": "One sharp sentence with local context if relevant. Empty string if no red flag.",
-  "redFlagAction": ["Specific action 1", "Specific action 2 (optional)"]
+  "redFlag": true or false — REQUIRED. Always present.
+  "redFlagTitle": "If redFlag=true: short punchy human title, max 5 words. If false: empty string.",
+  "redFlagReason": "If redFlag=true: one sharp sentence with local context. If false: empty string.",
+  "redFlagAction": ["If redFlag=true: 1–2 specific actions. If false: empty array."]
 }`;
 
     const response = await openai.chat.completions.create({
