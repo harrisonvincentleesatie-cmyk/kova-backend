@@ -34,31 +34,34 @@ app.get("/", (req, res) => {
 
 app.post("/analyze", async (req, res) => {
   try {
-    const { image, tapX, tapY } = req.body;
+    const { image, croppedImage, tapX, tapY } = req.body;
 
-    const tapContext = (tapX != null && tapY != null)
-      ? `The user tapped at approximately ${tapX}% from the left and ${tapY}% from the top of the image. Focus your analysis on the message in that region.`
-      : `Focus on the last message visible in the screenshot.`;
+    const systemPrompt = croppedImage
+      ? `You are Kova. Analyse the images and return ONLY a valid JSON object — no markdown, no extra text.
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are Kova. Analyse the screenshot and return ONLY a valid JSON object — no markdown, no extra text.
+You are given TWO images:
+1. SELECTED MESSAGE — a cropped region the user explicitly chose. This is the ONLY message you must respond to.
+2. FULL CONVERSATION — the complete screenshot. Use it only for tone, relationship, and context.
 
-TARGET: ${tapContext}
+Treat the selected message as incoming — written by the other person to the user.
+Generate a reply FROM the user back to the selected message.
+Do not respond to any other message in the full conversation.
+Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.`
+      : `You are Kova. Analyse the screenshot and return ONLY a valid JSON object — no markdown, no extra text.
 
-HOW TO REASON:
-1. Identify the message at or near the tapped region — this is the message to analyse
-2. Treat that message as incoming — written by the other person
-3. Generate a reply FROM the user back to that specific message
-4. Use all other messages only for tone, relationship, and context
+Focus on the message at approximately ${tapX}% from the left and ${tapY}% from the top.
+Treat that message as incoming. Generate a reply from the user back to it.
+Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.`;
 
-Do not reply to any other message. Do not guess based on colors or layout.
-Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.
+    const userContent: any[] = [
+      { type: "text", text: croppedImage ? "Selected message (image 1). Full conversation (image 2)." : "Analyse this screenshot." },
+    ];
+    if (croppedImage) {
+      userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${croppedImage}` } });
+    }
+    userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
-{
+    const jsonSchema = `{
   "whatThisReallyMeans": "Real intent behind the selected message. 1–2 sharp sentences.",
   "impactLine": "What happens if the user responds badly. One sentence.",
   "riskLevel": "Low" or "Medium" or "High",
@@ -69,23 +72,13 @@ Detect the conversation language and reply in that language. Never default to Vi
     "english": "Plain English meaning. Rephrase if already English."
   },
   "whatTheyWant": "What the sender of the selected message wants. One sentence."
-}`,
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Analyse this screenshot.",
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${image}`,
-              },
-            },
-          ],
-        },
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: systemPrompt + "\n\n" + jsonSchema },
+        { role: "user",   content: userContent },
       ],
     });
 
