@@ -6,6 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
+app.get("/", (req, res) => {
+  res.send("Server is alive");
+});
+
 app.post("/analyze", (req, res) => {
   res.json({
     whatThisReallyMeans: "This is a test — backend is connected.",
