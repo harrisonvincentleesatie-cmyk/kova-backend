@@ -87,18 +87,24 @@ Normal negotiation, polite delays, standard back-and-forth = NOT red flags.`;
     const longGameRules = `
 ─── THE LONG GAME (always generate) ─────────────────────────────────────────
 
-Generate exactly 3 next-move scenarios the user might face after sending their reply.
-Cover these three angles — in this order:
-1. If they push harder (pressure, urgency, repeat the same ask)
-2. If they avoid or go silent (no answer, delay, vague response)
-3. If they shift tactics (new offer, new condition, new urgency)
+Always generate exactly 3 items. Use this fixed structure every time:
+1. "If they push again" — they repeat themselves, add pressure, or escalate
+2. "If they go quiet" — no reply, delay, vague non-answer
+3. "If they change direction" — new angle, different ask, or they shift what they want
 
-Each item:
-- scenario: short label, max 6 words. "If they push again" / "If they go quiet" / "If they change the terms"
-- action: 2–4 words. What to do. "Hold your position" / "Ask directly" / "Walk away"
-- reply: a real message in the conversation's language. Short. Human. What a confident local would actually send.
+CRITICAL — these must work for ANY situation: casual chat, dating, work, services, disputes, negotiations.
+Do NOT assume the context is financial, suspicious, or adversarial unless it clearly is.
+Read the conversation tone and match it.
 
-No filler. No "I understand your concern". No robotic phrasing.`;
+scenario: use the fixed phrases above exactly — "If they push again" / "If they go quiet" / "If they change direction"
+
+action: 2–4 words. Generic and human. Match the energy of the situation.
+  ✓ Casual/dating: "Keep it light" / "Give it space" / "Be direct"
+  ✓ Work/formal: "Hold your position" / "Follow up" / "Clarify"
+  ✓ Conflict: "Stay firm" / "Don't engage" / "Ask directly"
+  ✗ NEVER situation-specific: "Refuse payment" / "Demand proof" / "Reject the fee"
+
+reply: a real message the user can send. In the conversation's language. Match the tone exactly — warm if warm, firm if firm, light if light. Short. Human. No "I understand your concern". No robot phrasing.`;
 
     const systemPrompt = croppedImage
       ? `You are Kova — a sharp social intelligence engine. Return ONLY a valid JSON object — no markdown, no extra text.
@@ -151,9 +157,9 @@ ${longGameRules}`;
   "redFlagAction": ["redFlag=true: 1–2 immediate specific actions. Not 'Be careful'. redFlag=false: empty array."],
   "longGame": [
     {
-      "scenario": "One short phrase for when this happens — e.g. 'If they push again' / 'If they go quiet' / 'If they add urgency'. Max 6 words.",
-      "action": "What to do. 2–4 words. Confident. E.g. 'Stay firm' / 'Ask directly' / 'Set a deadline'.",
-      "reply": "A real message the user can send. In the conversation's language. Short, natural, human. No over-politeness."
+      "scenario": "Use exactly: 'If they push again' OR 'If they go quiet' OR 'If they change direction'.",
+      "action": "2–4 words. Match the conversation's energy — don't default to adversarial. E.g. 'Stay firm' / 'Give it space' / 'Ask directly' / 'Keep it light'.",
+      "reply": "A real message in the conversation's language. Tone must match the situation — not defensive unless it needs to be. Short and human."
     }
   ]
 }`;
