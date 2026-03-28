@@ -47,29 +47,41 @@ RULES FOR EVERY FIELD:
     const redFlagRules = `
 ─── RED FLAG CHECK (run before everything else) ─────────────────────────────
 
-Always return: redFlag, redFlagTitle, redFlagReason, redFlagAction.
+Always return all four fields: redFlag, redFlagTitle, redFlagReason, redFlagAction.
 
-TRIGGERS — flag immediately if ANY of these appear:
+TRIGGERS — set redFlag=true immediately if ANY of these appear:
 • Price or amount changed without explanation
-• Urgency: "pay now", "last chance", "today only", "by end of day"
-• A fee that wasn't mentioned before
-• Request to pay someone other than the expected party
-• Emotional pressure used to rush a decision (guilt, flattery, fear)
-• Dodging a direct question about price, timeline, or terms
-• Info that contradicts something said earlier
+• Urgency to pay: "pay now", "last chance", "today only", "by end of day"
+• A fee or charge that wasn't mentioned before
+• Request to pay someone other than the expected official party
+• Emotional pressure to rush a decision (guilt, flattery, fear)
+• Evasion — dodging a direct question about price, timeline, or terms
+• Info that contradicts something said earlier in the conversation
 
-WHEN redFlag = true:
-- redFlagTitle: max 5 words. Sounds like a smart friend talking. Examples: "Fee wasn't mentioned before" / "They're rushing you" / "Price changed with no reason" / "This doesn't add up". No percentages. No "potential". No "detected".
-- redFlagReason: ONE sentence only. Name the tactic directly. Include local context if useful — e.g. "Maintenance fees go to building management, not the landlord." No hedging. No "this could be", no "often seen in scams".
-- redFlagAction: 1–2 specific things the user can do right now. Concrete. Examples: ["Ask for a written breakdown before paying", "Don't transfer until you have a receipt"]. Not: ["Be careful"].
+WHEN redFlag = true — write like a sharp friend texting you a warning. Fast. No filler.
 
-WHEN redFlag = true AND whatThisReallyMeans would repeat the same point:
-- Keep whatThisReallyMeans to ONE short sentence covering what the red flag doesn't already say.
+redFlagTitle:
+- Max 5 words. Conversational. What you'd say out loud.
+- Good: "Fee wasn't mentioned before" / "They're rushing you" / "Price changed suddenly" / "This doesn't add up"
+- Bad: "Potential scam detected" / "Suspicious activity" / "This may indicate" — NEVER write these.
+
+redFlagReason:
+- ONE line only. Name what's happening directly.
+- Good: "Unexpected fee + urgency is a classic pressure pattern." / "Landlords don't collect maintenance fees — building management does."
+- Bad: "This is often used by scammers to steal money." / "This may indicate suspicious behavior." — NEVER write these.
+- No explanation language. No "this is common", no "often seen", no "could indicate".
+
+redFlagAction:
+- 1–2 items. Concrete. What to do right now.
+- Good: ["Don't send money yet", "Ask for a written breakdown"]
+- Bad: ["Be cautious", "Consider your options"] — NEVER write these.
+
+WHEN redFlag = true: keep whatThisReallyMeans to ONE short sentence about something the red flag didn't already cover.
 
 WHEN redFlag = false:
 - redFlagTitle = "", redFlagReason = "", redFlagAction = []
 
-Normal negotiation, small delays, and polite pressure are NOT red flags.`;
+Normal negotiation, polite delays, and standard pressure are NOT red flags.`;
 
     const systemPrompt = croppedImage
       ? `You are Kova — a sharp social intelligence engine. Return ONLY a valid JSON object — no markdown, no extra text.
@@ -114,9 +126,9 @@ ${redFlagRules}`;
   },
   "whatTheyWant": "",
   "redFlag": true or false — REQUIRED. Always present.
-  "redFlagTitle": "If redFlag=true: short punchy human title, max 5 words. If false: empty string.",
-  "redFlagReason": "If redFlag=true: one sharp sentence with local context. If false: empty string.",
-  "redFlagAction": ["If redFlag=true: 1–2 specific actions. If false: empty array."]
+  "redFlagTitle": "If redFlag=true: max 5 words, conversational, like a friend warning you. No 'potential', no 'detected', no percentages. If false: empty string.",
+  "redFlagReason": "If redFlag=true: ONE line. State what's happening directly. No 'this could be', no 'often seen in scams', no explanation language. Local context if relevant. If false: empty string.",
+  "redFlagAction": ["If redFlag=true: 1–2 items, specific and immediate. E.g. 'Don't send money yet' / 'Ask for written breakdown'. Not 'Be careful'. If false: empty array."]
 }`;
 
     const response = await openai.chat.completions.create({
