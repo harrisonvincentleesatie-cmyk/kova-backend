@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-const openai = new OpenAI({
+const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -127,7 +127,7 @@ ${redFlagRules}`;
   "redFlagAction": ["redFlag=true: 1–2 immediate specific actions. Not 'Be careful'. redFlag=false: empty array."]
 }`;
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         { role: "system", content: systemPrompt + "\n\n" + jsonSchema },
@@ -177,7 +177,7 @@ app.post("/refine", async (req, res) => {
   try {
     const { native, english, instruction } = req.body;
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         {
@@ -212,7 +212,7 @@ app.post("/say", async (req, res) => {
   try {
     const { text, tone } = req.body;
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         {
