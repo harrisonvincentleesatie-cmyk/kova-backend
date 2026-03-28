@@ -38,50 +38,46 @@ app.post("/analyze", async (req, res) => {
 
     const writingRules = `
 RULES FOR EVERY FIELD:
-- Speak directly to the user. Say "they" for the other person, "you" for the user. Never say "the sender" or "the user".
-- No hedging. Never write "could", "may", "might", "potentially", "it seems". Say what it is.
-- No filler. Never start with "This indicates", "It appears", "Based on".
-- Be concise. Cut any word that doesn't add meaning.
-- Sound human. Write like a sharp friend, not a customer service bot.`;
+- Say "they" for the other person, "you" for the user. Never "the sender", never "the user".
+- No hedging. Never write "could", "may", "might", "potentially", "it seems", "this indicates".
+- No filler openers. Never start with "This indicates", "It appears", "Based on", "It seems".
+- Cut everything that doesn't add direct meaning.
+- Sound like a sharp person who knows what they're talking about. Not a bot, not a teacher.`;
 
     const redFlagRules = `
 ─── RED FLAG CHECK (run before everything else) ─────────────────────────────
 
 Always return all four fields: redFlag, redFlagTitle, redFlagReason, redFlagAction.
 
-TRIGGERS — set redFlag=true immediately if ANY of these appear:
+TRIGGERS — set redFlag=true if ANY of these appear:
 • Price or amount changed without explanation
 • Urgency to pay: "pay now", "last chance", "today only", "by end of day"
-• A fee or charge that wasn't mentioned before
-• Request to pay someone other than the expected official party
-• Emotional pressure to rush a decision (guilt, flattery, fear)
-• Evasion — dodging a direct question about price, timeline, or terms
-• Info that contradicts something said earlier in the conversation
+• A fee or charge not mentioned before
+• Request to pay someone other than the expected party
+• Emotional pressure to rush (guilt, flattery, fear)
+• Dodging a direct question about price, timeline, or terms
+• Info that contradicts something said earlier
 
-WHEN redFlag = true — write like a sharp friend texting you a warning. Fast. No filler.
+WHEN redFlag = true:
 
-redFlagTitle:
-- Max 5 words. Conversational. What you'd say out loud.
-- Good: "Fee wasn't mentioned before" / "They're rushing you" / "Price changed suddenly" / "This doesn't add up"
-- Bad: "Potential scam detected" / "Suspicious activity" / "This may indicate" — NEVER write these.
+redFlagTitle — max 5 words, sounds like a friend warning you:
+✓ "Fee wasn't mentioned before" / "They're rushing you" / "Price changed" / "This doesn't add up"
+✗ NEVER: "Potential scam" / "Suspicious activity" / "This may indicate" / "Classic pattern"
 
-redFlagReason:
-- ONE line only. Name what's happening directly.
-- Good: "Unexpected fee + urgency is a classic pressure pattern." / "Landlords don't collect maintenance fees — building management does."
-- Bad: "This is often used by scammers to steal money." / "This may indicate suspicious behavior." — NEVER write these.
-- No explanation language. No "this is common", no "often seen", no "could indicate".
+redFlagReason — ONE line, zero explanation tone:
+✓ "Unexpected fee + urgency = scam" / "Landlords don't collect maintenance fees — building management does"
+✗ NEVER: "classic", "often", "pattern", "this is common", "scammers use this", "could indicate"
+Write what IT IS. Not what it "could be" or "often means".
 
-redFlagAction:
-- 1–2 items. Concrete. What to do right now.
-- Good: ["Don't send money yet", "Ask for a written breakdown"]
-- Bad: ["Be cautious", "Consider your options"] — NEVER write these.
+redFlagAction — 1–2 items, immediate and specific:
+✓ ["Don't send money yet", "Ask for written breakdown"]
+✗ NEVER: ["Be careful", "Think before acting", "Consider your options"]
 
-WHEN redFlag = true: keep whatThisReallyMeans to ONE short sentence about something the red flag didn't already cover.
+WHEN redFlag = true: whatThisReallyMeans must be ONE sentence max, covering only what the red flag didn't already say. No repetition.
 
-WHEN redFlag = false:
-- redFlagTitle = "", redFlagReason = "", redFlagAction = []
+WHEN redFlag = false: redFlagTitle = "", redFlagReason = "", redFlagAction = []
 
-Normal negotiation, polite delays, and standard pressure are NOT red flags.`;
+Normal negotiation, polite delays, and standard back-and-forth are NOT red flags.`;
 
     const systemPrompt = croppedImage
       ? `You are Kova — a sharp social intelligence engine. Return ONLY a valid JSON object — no markdown, no extra text.
@@ -113,22 +109,22 @@ ${redFlagRules}`;
     userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
     const jsonSchema = `{
-  "summary": "One line, max 10 words. The single most important thing about this message. No subject pronoun needed. Examples: 'Routine charge — nothing unusual' / 'Delaying — no clear timeline given' / 'Polite but non-committal'.",
-  "whatThisReallyMeans": "What they're actually doing socially — not a literal description. If redFlag=true, keep this to ONE sentence covering what the red flag didn't already explain. If redFlag=false, 1–2 sharp sentences. Start with what's really happening, not what was said.",
-  "impactLine": "What goes wrong if you respond badly. One direct sentence. No hedging.",
+  "summary": "One line, max 10 words. Most important thing. No subject pronoun. Examples: 'Routine charge — nothing unusual' / 'Delaying — no timeline given' / 'Polite but non-committal'.",
+  "whatThisReallyMeans": "If redFlag=true: ONE sentence only — what the red flag doesn't already cover. No repetition of urgency, scam, or fee. If redFlag=false: 1–2 sharp sentences on what they're actually doing socially.",
+  "impactLine": "What goes wrong if you respond badly. One sentence. No hedging.",
   "riskLevel": "Low" or "Medium" or "High",
-  "riskRead": "One decisive sentence, under 12 words. Say what the risk actually is.",
+  "riskRead": "One decisive sentence, under 12 words.",
   "whatToDo": ["Short confident action", "Short confident action", "Short confident action"],
   "sayThis": {
-    "native": "A natural reply the user can send. In the conversation's language. Sound like a real person — no over-politeness, no robot phrasing. Match the tone of the conversation.",
-    "english": "Plain English meaning. If already English, rephrase slightly so it doesn't feel like a repeat.",
-    "tone": "2–3 short human descriptors for the tone of the reply, joined with ' • '. Examples: 'Direct • Calm • Controlled' / 'Polite • Warm • Clear' / 'Playful • Light • Easy'. No technical jargon."
+    "native": "Natural reply the user can send. Conversation language. Real person tone — not polite-robot.",
+    "english": "Plain English meaning. Rephrase if already English.",
+    "tone": "2–3 short descriptors joined with ' • '. Examples: 'Direct • Calm • Controlled' / 'Warm • Clear • Easy'."
   },
   "whatTheyWant": "",
-  "redFlag": true or false — REQUIRED. Always present.
-  "redFlagTitle": "If redFlag=true: max 5 words, conversational, like a friend warning you. No 'potential', no 'detected', no percentages. If false: empty string.",
-  "redFlagReason": "If redFlag=true: ONE line. State what's happening directly. No 'this could be', no 'often seen in scams', no explanation language. Local context if relevant. If false: empty string.",
-  "redFlagAction": ["If redFlag=true: 1–2 items, specific and immediate. E.g. 'Don't send money yet' / 'Ask for written breakdown'. Not 'Be careful'. If false: empty array."]
+  "redFlag": true or false — REQUIRED,
+  "redFlagTitle": "redFlag=true: max 5 words, friend-warning tone. No 'potential', 'detected', 'classic', 'pattern'. redFlag=false: empty string.",
+  "redFlagReason": "redFlag=true: ONE line. State what it is — not what it 'often means'. No 'classic', 'common', 'pattern', 'often', 'could'. redFlag=false: empty string.",
+  "redFlagAction": ["redFlag=true: 1–2 immediate specific actions. Not 'Be careful'. redFlag=false: empty array."]
 }`;
 
     const response = await openai.chat.completions.create({
