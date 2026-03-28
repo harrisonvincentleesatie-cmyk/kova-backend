@@ -84,6 +84,22 @@ WHEN redFlag = false: redFlagTitle="", redFlagReason="", redFlagConsequence="", 
 
 Normal negotiation, polite delays, standard back-and-forth = NOT red flags.`;
 
+    const longGameRules = `
+─── THE LONG GAME (always generate) ─────────────────────────────────────────
+
+Generate exactly 3 next-move scenarios the user might face after sending their reply.
+Cover these three angles — in this order:
+1. If they push harder (pressure, urgency, repeat the same ask)
+2. If they avoid or go silent (no answer, delay, vague response)
+3. If they shift tactics (new offer, new condition, new urgency)
+
+Each item:
+- scenario: short label, max 6 words. "If they push again" / "If they go quiet" / "If they change the terms"
+- action: 2–4 words. What to do. "Hold your position" / "Ask directly" / "Walk away"
+- reply: a real message in the conversation's language. Short. Human. What a confident local would actually send.
+
+No filler. No "I understand your concern". No robotic phrasing.`;
+
     const systemPrompt = croppedImage
       ? `You are Kova — a sharp social intelligence engine. Return ONLY a valid JSON object — no markdown, no extra text.
 
@@ -95,7 +111,8 @@ The selected message is incoming — written by the other person to the user.
 Generate a reply FROM the user back to that message.
 Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.
 ${writingRules}
-${redFlagRules}`
+${redFlagRules}
+${longGameRules}`
       : `You are Kova — a sharp social intelligence engine. Return ONLY a valid JSON object — no markdown, no extra text.
 
 Focus on the message at approximately ${tapX}% from the left and ${tapY}% from the top.
@@ -103,7 +120,8 @@ That message is incoming — written by the other person to the user.
 Generate a reply FROM the user back to that message.
 Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.
 ${writingRules}
-${redFlagRules}`;
+${redFlagRules}
+${longGameRules}`;
 
     const userContent = [
       { type: "text", text: croppedImage ? "Selected message (image 1). Full conversation (image 2)." : "Analyse this screenshot." },
@@ -130,7 +148,14 @@ ${redFlagRules}`;
   "redFlagTitle": "redFlag=true: max 5 words, friend-warning tone. No 'potential', 'detected', 'classic', 'pattern'. redFlag=false: empty string.",
   "redFlagReason": "redFlag=true: ONE line. State what it is — not what it 'often means'. No 'classic', 'common', 'pattern', 'often', 'could'. redFlag=false: empty string.",
   "redFlagConsequence": "redFlag=true: REQUIRED — ONE line, always. The specific stake. Name an amount, contract, or concrete loss. No vague language. redFlag=false: empty string.",
-  "redFlagAction": ["redFlag=true: 1–2 immediate specific actions. Not 'Be careful'. redFlag=false: empty array."]
+  "redFlagAction": ["redFlag=true: 1–2 immediate specific actions. Not 'Be careful'. redFlag=false: empty array."],
+  "longGame": [
+    {
+      "scenario": "One short phrase for when this happens — e.g. 'If they push again' / 'If they go quiet' / 'If they add urgency'. Max 6 words.",
+      "action": "What to do. 2–4 words. Confident. E.g. 'Stay firm' / 'Ask directly' / 'Set a deadline'.",
+      "reply": "A real message the user can send. In the conversation's language. Short, natural, human. No over-politeness."
+    }
+  ]
 }`;
 
     const response = await client.chat.completions.create({
@@ -156,6 +181,7 @@ ${redFlagRules}`;
       redFlagReason: "",
       redFlagConsequence: "",
       redFlagAction: [],
+      longGame: [],
     });
 
     res.json(parsed);
@@ -171,6 +197,7 @@ ${redFlagRules}`;
       redFlagReason: "",
       redFlagConsequence: "",
       redFlagAction: [],
+      longGame: [],
       riskRead: "This is a technical error, not a real risk assessment.",
       whatToDo: ["Check Render logs", "Verify OPENAI_API_KEY is set", "Try again"],
       sayThis: { native: "There was an error. Please try again.", english: "There was an error. Please try again." },
