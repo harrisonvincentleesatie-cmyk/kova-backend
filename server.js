@@ -53,7 +53,7 @@ Focus on the message at approximately ${tapX}% from the left and ${tapY}% from t
 Treat that message as incoming. Generate a reply from the user back to it.
 Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.`;
 
-    const userContent: any[] = [
+    const userContent = [
       { type: "text", text: croppedImage ? "Selected message (image 1). Full conversation (image 2)." : "Analyse this screenshot." },
     ];
     if (croppedImage) {
