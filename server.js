@@ -52,16 +52,17 @@ Return ONLY a valid JSON object. No markdown, no code blocks, no extra text.
   "riskRead": "One sentence explaining the risk level.",
   "whatToDo": ["Short action", "Short action", "Short action"],
   "sayThis": {
-    "vietnamese": "The reply they should send. Written in natural, conversational Vietnamese — how a real local person would say it. Match the register: formal for landlord or work, relaxed for friends.",
-    "english": "What the Vietnamese reply means in plain English."
+    "native": "Detect the primary language of the conversation in the screenshot. Write the reply in THAT language — how a real local speaker would say it. Match the register: formal for landlord or work, relaxed for friends. If the language is unclear, use English.",
+    "english": "Plain English meaning of the native reply. If native is already English, write a natural rephrasing instead."
   },
   "whatTheyWant": "One sentence. The real intent behind their message."
 }
 
 Rules:
+- Detect and match the conversation language — NEVER default to Vietnamese unless the screenshot is in Vietnamese
 - Only describe relationships that are clearly visible (do not assume manager, HR, or authority)
 - No corporate language: escalate, loop in, circle back, touch base
-- The Vietnamese reply must sound like a real person, not a textbook
+- The native reply must sound like a real person, not a textbook or translator
 - Tone by situation: landlord = polite but firm / work = calm and direct / casual = natural
 - No dramatic language, no invented urgency
 - Always commit to one clear read`,
@@ -105,7 +106,7 @@ Rules:
       riskLevel: "Low",
       riskRead: "This is a technical error, not a real risk assessment.",
       whatToDo: ["Check Render logs", "Verify OPENAI_API_KEY is set", "Try again"],
-      sayThis: { vietnamese: "Đã xảy ra lỗi. Vui lòng thử lại.", english: "There was an error. Please try again." },
+      sayThis: { native: "There was an error. Please try again.", english: "There was an error. Please try again." },
       whatTheyWant: "System error.",
     });
   }
@@ -122,34 +123,32 @@ app.post("/say", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are a cultural communication expert fluent in Vietnamese and English.
+          content: `You are a cultural communication expert. You help people say things naturally in any language.
 
-Your job is NOT to translate literally. Your job is to write what a real Vietnamese person would actually say in this situation — naturally, idiomatically, and with the right social register.
+Your job is NOT to translate literally. Write what a real local person would actually say — idiomatically, with the right social register.
 
-The user will describe what they want to say and choose a tone: Polite, Casual, or Firm.
+The user will describe what they want to say, in any language. Detect the language of their input and reply in THAT language. Never default to Vietnamese unless the input is in Vietnamese.
 
 Return ONLY a valid JSON object. No markdown. No explanation outside the JSON.
 
-Return this exact structure:
-
 {
-  "vietnamese": "The main Vietnamese message. Natural phrasing, correct register for the tone.",
-  "english": "A natural English rephrasing of the Vietnamese — not a literal translation.",
-  "toneExplain": "One sentence describing how this sounds socially to a Vietnamese listener.",
+  "native": "The message in the same language as the user's input. Natural phrasing for a real local speaker. Match the tone.",
+  "english": "Plain English meaning. If native is already English, write a natural rephrasing.",
+  "toneExplain": "One sentence describing how this sounds socially in that culture.",
   "variations": {
-    "softer": "A softer version of the Vietnamese message.",
-    "direct": "A more direct version of the Vietnamese message.",
-    "shorter": "A shorter version of the Vietnamese message."
+    "softer": "A softer version in the same language.",
+    "direct": "A more direct version in the same language.",
+    "shorter": "A shorter version in the same language."
   }
 }
 
 Tone guide:
-- Polite: uses ạ, anh/chị ơi, formal register, deferential but clear
-- Casual: relaxed, uses mình/bạn or first name energy, natural between peers or friends
-- Firm: direct, minimal softening, appropriate when you need action not conversation
+- Polite: formal register, deferential but clear
+- Casual: relaxed, natural between peers or friends
+- Firm: direct, minimal softening, gets action
 
-Real-life context matters. Dating, work, housing, family — adjust the phrasing accordingly.
-Never sound robotic or textbook. Sound like a person.`,
+Context matters: dating, work, housing, family — adjust accordingly.
+Sound like a person. Never robotic. Never textbook.`,
         },
         {
           role: "user",
@@ -160,13 +159,13 @@ Never sound robotic or textbook. Sound like a person.`,
 
     const raw = response.choices[0].message.content;
     const parsed = parseJSON(raw, {
-      vietnamese: "Không thể tạo tin nhắn lúc này.",
+      native: "Could not generate a message right now.",
       english: "Could not generate a message right now.",
       toneExplain: "There was an error generating the response.",
       variations: {
-        softer: "Không có phiên bản khác.",
-        direct: "Không có phiên bản khác.",
-        shorter: "Không có phiên bản khác.",
+        softer: "No variation available.",
+        direct: "No variation available.",
+        shorter: "No variation available.",
       },
     });
 
@@ -175,13 +174,13 @@ Never sound robotic or textbook. Sound like a person.`,
   } catch (err) {
     console.error("/say error:", err.message);
     res.json({
-      vietnamese: "Đã xảy ra lỗi.",
+      native: "An error occurred.",
       english: "An error occurred.",
       toneExplain: err.message,
       variations: {
-        softer: "Không có phiên bản khác.",
-        direct: "Không có phiên bản khác.",
-        shorter: "Không có phiên bản khác.",
+        softer: "No variation available.",
+        direct: "No variation available.",
+        shorter: "No variation available.",
       },
     });
   }
