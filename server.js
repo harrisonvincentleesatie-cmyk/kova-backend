@@ -34,7 +34,11 @@ app.get("/", (req, res) => {
 
 app.post("/analyze", async (req, res) => {
   try {
-    const { image } = req.body;
+    const { image, role } = req.body;
+
+    const roleInstruction = role === 'sender'
+      ? `The user sent the last message. The other person has not replied yet. Generate the next message the user should send to move the conversation forward.`
+      : `The user received the last message. Generate a reply from the user back to that message.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
@@ -43,31 +47,29 @@ app.post("/analyze", async (req, res) => {
           role: "system",
           content: `You are Kova. Analyse the screenshot and return ONLY a valid JSON object — no markdown, no extra text.
 
-PRIMARY RULE: Always respond to the LAST message visible in the screenshot. Everything else is context.
+ROLE CONTEXT: ${roleInstruction}
 
 HOW TO REASON:
 1. Find the last message in the conversation — the most recent thing said
-2. Treat it as incoming — assume it was sent TO the user, not by them
-3. Generate a reply FROM the user back to that message
-4. Use earlier messages only to understand tone, relationship, and context
+2. Apply the role context above to determine perspective
+3. Generate the next message accordingly
+4. Use all earlier messages only for tone, relationship, and context
 
-If you are unsure who sent the last message: still treat it as incoming and still reply to it. Never skip it.
-
-Never reply to an earlier message. Never generate a reply from the other person's side.
+Never reply to an earlier message. Never generate a message from the wrong perspective.
 
 Detect the conversation language and reply in that language. Never default to Vietnamese unless the screenshot is in Vietnamese.
 
 {
   "whatThisReallyMeans": "Real intent behind the last message. 1–2 sharp sentences.",
-  "impactLine": "What happens if the user responds badly. One sentence.",
+  "impactLine": "What happens if the next message is wrong. One sentence.",
   "riskLevel": "Low" or "Medium" or "High",
   "riskRead": "One sentence on the risk level.",
   "whatToDo": ["Action", "Action", "Action"],
   "sayThis": {
-    "native": "The user's reply to the last message. In the conversation's language. Natural, not translated.",
+    "native": "The next message to send. In the conversation's language. Natural, not translated.",
     "english": "Plain English meaning. Rephrase if already English."
   },
-  "whatTheyWant": "What the sender of the last message wants. One sentence."
+  "whatTheyWant": "What the other person wants in this conversation right now. One sentence."
 }`,
         },
         {
