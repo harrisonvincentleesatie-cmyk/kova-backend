@@ -724,6 +724,91 @@ Return ONLY a valid JSON object. No markdown.
   }
 });
 
+// ── /continue — continue conversation with context ────────────────────────────
+
+app.post("/continue", async (req, res) => {
+  try {
+    const { previousMessage, previousReply, previousAnalysis, newMessage } = req.body;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are Kova — continuing an ongoing conversation.
+
+You already analyzed a message and suggested a reply. Now the other person has responded.
+Do NOT restart from scratch. Continue from where things left off.
+
+CONTEXT RULES:
+- Maintain the same tone and strategy unless the new message changes things significantly.
+- Only update riskLevel if there is a real reason — not just because there is a new message.
+- Keep whatToDo short and actionable.
+- The reply (sayThis.native) must be in the same language as the conversation.
+
+Return ONLY a valid JSON object — no markdown, no extra text:
+{
+  "update": "1–2 lines. What changed or what matters now. Direct, no filler.",
+  "riskLevel": "Low" or "Medium" or "High",
+  "riskRead": "One sentence under 12 words. Only update if risk actually changed.",
+  "whatToDo": ["Short decisive action", "Short decisive action", "Short decisive action"],
+  "sayThis": {
+    "native": "Reply in the conversation's language. Calm, real, human. Executes whatToDo[0].",
+    "english": "Plain English meaning.",
+    "tone": "2–3 words joined with ' • '"
+  }
+}`,
+        },
+        {
+          role: "user",
+          content: `Previous message they sent:
+"${previousMessage}"
+
+Your suggested reply:
+"${previousReply}"
+
+Previous analysis:
+Risk: ${previousAnalysis.riskLevel}
+Context: ${previousAnalysis.summary || previousAnalysis.whatThisReallyMeans || ''}
+
+Now they replied:
+"${newMessage}"
+
+Continue the conversation.`,
+        },
+      ],
+    });
+
+    const raw = response.choices[0].message.content;
+    const parsed = parseJSON(raw, {
+      update: "Could not process continuation.",
+      riskLevel: previousAnalysis.riskLevel || "Low",
+      riskRead: previousAnalysis.riskRead || "",
+      whatToDo: previousAnalysis.whatToDo || [],
+      sayThis: { native: "", english: "", tone: "" },
+    });
+
+    if (!parsed.sayThis || typeof parsed.sayThis !== "object") {
+      parsed.sayThis = { native: "", english: "", tone: "" };
+    }
+    if (!parsed.sayThis.tone) parsed.sayThis.tone = "";
+    if (!Array.isArray(parsed.whatToDo)) parsed.whatToDo = [];
+    parsed.whatToDo = dedupeWhatToDo(parsed.whatToDo);
+
+    res.json(parsed);
+
+  } catch (err) {
+    console.error("/continue error:", err.message);
+    res.json({
+      update: "Error processing continuation.",
+      riskLevel: "Low",
+      riskRead: "",
+      whatToDo: [],
+      sayThis: { native: "There was an error. Please try again.", english: "There was an error. Please try again.", tone: "" },
+    });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.listen(3000, "0.0.0.0", () => {
