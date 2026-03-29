@@ -622,46 +622,45 @@ app.post("/ocr", async (req, res) => {
 
 app.post("/refine", async (req, res) => {
   try {
-    const { native, english, instruction } = req.body;
+    const { native, instruction } = req.body;
 
     const response = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         {
           role: "system",
-          content: `You rewrite conversation replies based on user instructions.
+          content: `You rewrite conversation replies based on a single user instruction.
 
 PRIORITY ORDER:
 1. User instruction — HIGHEST. Execute it exactly and fully.
-2. Conversation context — use to keep the reply realistic.
-3. Original reply — LOWEST. Discard entirely if the instruction requires it.
+2. Original reply — reference only. Discard entirely if the instruction requires it.
 
 RULES:
-- The user's instruction is a direct command, not a suggestion.
-- Do NOT "slightly adjust" if the instruction asks for a bigger change.
+- The instruction is a direct command, not a suggestion.
+- Do NOT slightly adjust when the instruction asks for a bigger change.
 - You MAY completely restructure or replace the reply.
-- If the instruction conflicts with the original reply, ignore the original.
-- Keep the reply in the same language as "native" unless told otherwise.
+- Keep the reply in the same language as the original unless told otherwise.
 - Sound like a calm, real person — not a chatbot or lawyer.
 - No over-politeness. No robotic phrasing. Natural and human.
+- Short sentences. Slight imperfection is fine.
 
 Return ONLY a valid JSON object — no markdown, no extra text:
-{ "native": "Rewritten reply in original language.", "english": "Plain English meaning. Rephrase if already English." }`,
+{ "native": "Rewritten reply in original language.", "english": "Plain English meaning of the new reply." }`,
         },
         {
           role: "user",
-          content: `Instruction: ${instruction}\n\nOriginal reply: "${native}"\nEnglish meaning: "${english}"`,
+          content: `Instruction: ${instruction}\n\nReply to rewrite: "${native}"`,
         },
       ],
     });
 
     const raw = response.choices[0].message.content;
-    const parsed = parseJSON(raw, { native, english });
+    const parsed = parseJSON(raw, { native, english: native });
     res.json(parsed);
 
   } catch (err) {
     console.error("/refine error:", err.message);
-    res.json({ native: req.body.native, english: req.body.english });
+    res.json({ native: req.body.native, english: req.body.native });
   }
 });
 
