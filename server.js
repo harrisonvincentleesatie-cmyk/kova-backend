@@ -139,40 +139,45 @@ HARD RULE:
 Serious contexts (logistics, negotiation, conflict) MUST NOT contain playful or flirty tone.
 
 ────────────────────────────────────────────────────────
-HUMAN EDGE / IMPACT RULES
+REPLY REALISM RULES
 ────────────────────────────────────────────────────────
 
-This rule is context-sensitive:
-- STRONG in flirting / casual conversation
-- MODERATE in normal conversation
-- MINIMAL in logistics / negotiation / conflict
+The user is a foreigner navigating a local environment.
+They need a message that sounds real, not rehearsed.
 
-Never sacrifice clarity or trust for "edge" in serious contexts.
+CORE PRINCIPLE:
+→ Write what a calm, smart foreigner would ACTUALLY type.
+→ Not what a lawyer would write. Not what a chatbot would suggest.
 
-The reply must feel like a real person — not an assistant.
+TONE CALIBRATION:
 
-Avoid:
-- Generic responses anyone could say
-- Passive or overly agreeable replies
-- Filler like "haha that's funny", "I'll be careful"
+Conflict / uncomfortable situation:
+→ Calm refusal over confrontation
+→ Soft boundary over ultimatum
+→ Natural question over demand
+→ "Can you explain a bit more?" NOT "Show me your license"
+→ "I'd rather go through the official process" NOT "This is illegal"
 
-Prefer:
-- Slight tension
-- Playful challenge (if appropriate)
-- Confidence over politeness
-- Personality over perfection
+Financial pressure:
+→ Polite pause over immediate pushback
+→ "I'll check this first" NOT "Prove it's legitimate"
+→ "Let me sort this through my bank" NOT "That sounds like a scam"
 
-GUIDELINES:
+Flirting / casual:
+→ Light, natural, slightly imperfect
+→ Match their energy without mirroring their words exactly
 
-1. Don't just react — add something
-2. Avoid predictable phrasing
-3. Slight boldness is GOOD when context allows
-4. Replies should feel specific, not templated
+HARD RULES:
+- No aggressive demands
+- No legal-style language ("I demand", "provide documentation", "that violates")
+- No over-formal phrasing a local would find strange
+- No phrases that would escalate a situation unnecessarily
 
-Test:
-→ "Would a real, confident person actually send this?"
+TEST:
+→ "Would a real person — calm, not naive — actually send this message in this country?"
+→ "Does it sound like a foreigner who knows how to handle themselves, without being rude?"
 
-If not — regenerate.
+If no — rewrite.
 
 ────────────────────────────────────────────────────────
 WRITING STYLE (GLOBAL)
@@ -182,6 +187,7 @@ WRITING STYLE (GLOBAL)
 - Use contractions (you're, I'd, can't)
 - Keep it tight — no long paragraphs
 - Slight imperfection is GOOD
+- Short sentences land better than complete formal ones
 - No robotic phrasing
 
 Say it directly:
@@ -460,7 +466,7 @@ ${coreRules}`;
   "riskRead": "One sentence, under 12 words. Say the actual risk plainly — not a category name, not vague language. If financial risk: name it specifically (bad rate, counterfeit, scam setup).",
   "whatToDo": ["Short decisive action — sounds like what you'd tell a friend. This becomes the strategy sayThis must execute.", "Same", "Same"],
   "sayThis": {
-    "native": "A message that DIRECTLY EXECUTES whatToDo[0]. Not a different action. Not a softer version. The user must be able to copy this and perform the strategy in whatToDo[0]. In the conversation's language. Match the energy exactly — playful if playful, firm if firm, casual if casual. Use contractions. Slight imperfection is fine. No over-politeness. No 'I understand'. No full formal sentences unless the chat is clearly formal. ALIGNMENT CHECK: re-read whatToDo[0], then ask 'does this message DO that?' — if not, rewrite.",
+    "native": "A message that DIRECTLY EXECUTES whatToDo[0]. Copy-paste ready. Sounds like a calm, real foreigner — not a lawyer, not a chatbot. In the conversation's local language. Match the energy: playful if playful, firm if firm, casual if casual. Use contractions. Slight imperfection is fine. For conflict or financial situations: calm and grounded, never aggressive or formal-legal. No 'I understand'. No ultimatums unless the situation truly demands it. ALIGNMENT CHECK: re-read whatToDo[0] — does this message actually DO that? If not, rewrite.",
     "english": "Plain English meaning. If already English, rephrase slightly — don't just repeat.",
     "tone": "2–3 words that describe how this reply FEELS. Joined with ' • '. Examples: 'Playful • Confident • Teasing' / 'Direct • Cool • Unbothered' / 'Warm • Clear • Grounded'."
   },
