@@ -24,6 +24,44 @@ function parseJSON(raw, fallback) {
   }
 }
 
+/**
+ * Removes duplicate and near-duplicate entries from a whatToDo array.
+ * Uses Jaccard similarity on word tokens — threshold 0.6.
+ * Caps result at 3 items.
+ */
+function dedupeWhatToDo(items) {
+  if (!Array.isArray(items) || items.length === 0) return items;
+
+  const normalize = (s) =>
+    String(s)
+      .toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  // Words longer than 2 chars carry meaning; shorter ones are stopwords
+  const tokenize = (s) => normalize(s).split(" ").filter((w) => w.length > 2);
+
+  const jaccard = (a, b) => {
+    const setA = new Set(tokenize(a));
+    const setB = new Set(tokenize(b));
+    if (setA.size === 0 && setB.size === 0) return 1;
+    const intersection = [...setA].filter((w) => setB.has(w)).length;
+    const union = new Set([...setA, ...setB]).size;
+    return intersection / union;
+  };
+
+  const kept = [];
+  for (const item of items) {
+    if (typeof item !== "string" || !item.trim()) continue;
+    const isDupe = kept.some((k) => jaccard(k, item) >= 0.6);
+    if (!isDupe) kept.push(item);
+    if (kept.length >= 3) break;
+  }
+
+  return kept;
+}
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 app.get("/", (req, res) => {
@@ -518,6 +556,8 @@ ${coreRules}`;
     if (!parsed.redFlagTitle)     parsed.redFlagTitle = "";
     if (!parsed.redFlagReason)    parsed.redFlagReason = "";
     if (!parsed.redFlagConsequence) parsed.redFlagConsequence = "";
+    if (!Array.isArray(parsed.whatToDo)) parsed.whatToDo = [];
+    parsed.whatToDo = dedupeWhatToDo(parsed.whatToDo);
     if (!Array.isArray(parsed.redFlagAction)) parsed.redFlagAction = [];
     if (!parsed.riskLevel)        parsed.riskLevel = "Low";
     if (!parsed.sayThis || typeof parsed.sayThis !== "object") {
