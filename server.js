@@ -417,37 +417,60 @@ whatToDo and sayThis MUST be aligned. They are not independent.
 
 ORDER OF GENERATION (internal):
 1. Decide whatToDo — the actual strategy
-2. Generate sayThis — a message that EXECUTES that strategy
+2. Generate sayThis — a message that EXECUTES every point in whatToDo[0]
 
-RULE: If a person read only sayThis, they must be performing whatToDo.
+RULE: If a person read only sayThis, they must be performing whatToDo[0].
+
+MULTI-POINT RULE:
+If whatToDo[0] contains more than one action (e.g. "verify identity and don't send money"),
+sayThis MUST reflect ALL of them — not just one.
+
+BAD:
+whatToDo[0] = "verify identity"
+sayThis = "Can I see the contract?" ← only addresses contract, not identity
+
+GOOD:
+whatToDo[0] = "verify identity and don't send money yet"
+sayThis = "Anh cần xem hợp đồng và xác minh trước khi chuyển tiền."
+
+BAD:
+whatToDo[0] = "do not send money, verify first"
+sayThis = "Ok, I'll think about it" ← no refusal, no verification
+
+GOOD:
+whatToDo[0] = "do not send money, verify first"
+sayThis = "Chưa chuyển được — anh cần xác minh thêm trước đã nhé."
 
 VALIDATION CHECK (run before finalising):
-→ Read whatToDo[0]
-→ Read sayThis.native
-→ Ask: "Does this message actually DO that action?"
+→ Read whatToDo[0] carefully
+→ List every action it contains
+→ Check sayThis includes each one
+→ If any action is missing — rewrite sayThis
 
-If the answer is NO — rewrite sayThis.
+STRATEGY → REPLY MAPPINGS:
 
-EXAMPLES:
+whatToDo contains "verify" / "confirm" / "check identity"
+→ sayThis MUST: ask for proof, request a document, or propose verification
+→ sayThis MUST NOT: agree, deflect, or change topic
 
-whatToDo[0] = "confirm legitimacy"
-sayThis MUST: ask for proof / request documentation / verify details
-sayThis MUST NOT: give a vague reply, change topic, avoid the ask
+whatToDo contains "don't pay" / "no money" / "hold off"
+→ sayThis MUST: express refusal or delay on payment, clearly
+→ sayThis MUST NOT: be vague, agreeable, or omit the refusal
 
-whatToDo[0] = "set a boundary"
-sayThis MUST: state the limit clearly
-sayThis MUST NOT: soften it to meaninglessness
+whatToDo contains "set a boundary"
+→ sayThis MUST: state the limit clearly, not hint at it
+→ sayThis MUST NOT: soften to the point of meaninglessness
 
-whatToDo[0] = "keep it light"
-sayThis MUST: be casual and non-confrontational
-sayThis MUST NOT: be serious or direct
+whatToDo contains "keep it light" / "stay casual"
+→ sayThis MUST: be relaxed and non-confrontational
+→ sayThis MUST NOT: be serious, formal, or direct
 
-whatToDo[0] = "call out the behaviour"
-sayThis MUST: name what they're doing, directly
-sayThis MUST NOT: hint at it or avoid saying it
+whatToDo contains "don't engage" / "ignore"
+→ sayThis MUST: be minimal or silent — not a full reply
+→ sayThis MUST NOT: engage with the content at all
 
 ANTI-PATTERN:
-If whatToDo says "don't engage" but sayThis is a full response — that is a failure. Rewrite.
+Any mismatch between what whatToDo says and what sayThis does = failure. Rewrite.
 
 ────────────────────────────────────────────────────────
 FINAL PRIORITY ORDER
