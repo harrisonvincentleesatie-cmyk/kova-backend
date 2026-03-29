@@ -629,27 +629,24 @@ app.post("/refine", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You rewrite conversation replies based on a single user instruction.
+          content: `You are rewriting a message.
 
-PRIORITY ORDER:
-1. User instruction — HIGHEST. Execute it exactly and fully.
-2. Original reply — reference only. Discard entirely if the instruction requires it.
+Rewrite the message to follow the user instruction exactly.
+You may completely change the sentence.
+Ignore the original if needed.
 
-RULES:
-- The instruction is a direct command, not a suggestion.
-- Do NOT slightly adjust when the instruction asks for a bigger change.
-- You MAY completely restructure or replace the reply.
+Rules:
+- If the instruction mentions specific details (times, dates, names, facts), they MUST appear in the output.
+- If the instruction asks for a question, form a question.
 - Keep the reply in the same language as the original unless told otherwise.
-- Sound like a calm, real person — not a chatbot or lawyer.
-- No over-politeness. No robotic phrasing. Natural and human.
-- Short sentences. Slight imperfection is fine.
+- Sound natural. No robotic phrasing.
 
 Return ONLY a valid JSON object — no markdown, no extra text:
 { "native": "Rewritten reply in original language.", "english": "Plain English meaning of the new reply." }`,
         },
         {
           role: "user",
-          content: `Instruction: ${instruction}\n\nReply to rewrite: "${native}"`,
+          content: `Original message:\n${native}\n\nUser instruction:\n${instruction}`,
         },
       ],
     });
