@@ -496,13 +496,13 @@ ${coreRules}`;
 
     const jsonSchema = `{
   "whatTheySaid": "Non-English only: exact original text, quoted as-is. English: empty string.",
-  "whatTheyMean": "Non-English only: 1–2 lines combining plain translation + real intent. What the words mean, then what it actually means socially if different. No filler. English: empty string.",
-  "summary": "One line, max 10 words. Most important thing about this message. No subject pronoun. Sharp and direct — not neutral. Examples: 'Rushing you before you can think' / 'Keeping it light, testing the waters' / 'Dodging the actual question'.",
-  "whatThisReallyMeans": "1–2 lines. The real intent behind the message — social, emotional, or strategic. Say it directly, no hedging. 'They're testing if you'll push back.' 'They want a commitment before you've thought it through.' Never repeat what whatTheySaid or whatTheyMean already said.",
-  "impactLine": "If redFlag=true: 5 words max or skip entirely. If redFlag=false: what goes wrong if you don't handle this right. One short sentence. Direct.",
-  "riskLevel": "Low" or "Medium" or "High" — apply RISK CLASSIFICATION RULES before outputting this. Informal money offers are never Low.",
-  "riskRead": "One sentence, under 12 words. Say the actual risk plainly — not a category name, not vague language. If financial risk: name it specifically (bad rate, counterfeit, scam setup).",
-  "whatToDo": ["Short decisive action — sounds like what you'd tell a friend. This becomes the strategy sayThis must execute.", "Same", "Same"],
+  "whatTheyMean": "Non-English only: one sentence — plain meaning + real intent combined. What the words mean AND what they're actually doing. No filler. English: empty string. BAD: 'They are asking you to send money quickly.' GOOD: 'They want money before a contract — no paper trail, no protection for you.'",
+  "summary": "Max 8 words. The single most important thing. No subject pronoun. Punchy, not neutral. BAD: 'They seem to be in a hurry about the deposit.' GOOD: 'Pushing for money with no paperwork.'",
+  "whatThisReallyMeans": "ONE sentence. The actual intent — social, strategic, or emotional. Say it like you're telling a friend. No hedging. No 'appears to' or 'seems like'. Never repeat summary. BAD: 'They appear to be attempting to get you to commit before you have had a chance to think.' GOOD: 'They're locking you in before you can ask questions.'",
+  "impactLine": "ONE sentence. What breaks if you don't handle this right. Specific, not vague. redFlag=true: skip this field entirely (empty string). BAD: 'This could potentially lead to problems.' GOOD: 'You agree to something you can't walk back.'",
+  "riskLevel": "Low" or "Medium" or "High" — apply RISK CLASSIFICATION RULES. Informal money offers are never Low.",
+  "riskRead": "Under 10 words. Name the actual risk. Not a category. Not vague. BAD: 'This situation carries financial risk.' GOOD: 'No contract means no recourse if they disappear.'",
+  "whatToDo": ["3–6 words. Sounds like advice from a sharp friend, not a safety manual. BAD: 'Consider requesting formal documentation.' GOOD: 'Ask for a written agreement first.'", "Same format.", "Same format."],
   "sayThis": {
     "native": "A message that DIRECTLY EXECUTES whatToDo[0]. Copy-paste ready. Sounds like a calm, real foreigner — not a lawyer, not a chatbot. In the conversation's local language. Match the energy: playful if playful, firm if firm, casual if casual. Use contractions. Slight imperfection is fine. For conflict or financial situations: calm and grounded, never aggressive or formal-legal. No 'I understand'. No ultimatums unless the situation truly demands it. ALIGNMENT CHECK: re-read whatToDo[0] — does this message actually DO that? If not, rewrite.",
     "english": "Plain English meaning. If already English, rephrase slightly — don't just repeat.",
@@ -511,9 +511,9 @@ ${coreRules}`;
   "whatTheyWant": "",
   "redFlag": true or false — REQUIRED,
   "redFlagTitle": "redFlag=true: max 5 words, friend-warning tone. No 'potential', 'detected', 'classic', 'pattern'. redFlag=false: empty string.",
-  "redFlagReason": "redFlag=true: ONE line. State what it is — not what it 'often means'. No 'classic', 'common', 'pattern', 'often', 'could'. redFlag=false: empty string.",
-  "redFlagConsequence": "redFlag=true: REQUIRED — ONE line, always. The specific stake. Name an amount, contract, or concrete loss. No vague language. redFlag=false: empty string.",
-  "redFlagAction": ["redFlag=true: 1–2 immediate specific actions. Not 'Be careful'. redFlag=false: empty array."],
+  "redFlagReason": "redFlag=true: ONE sentence. Name exactly what's happening. No 'often', 'could', 'classic', 'pattern'. BAD: 'This is a classic pattern used to pressure people.' GOOD: 'They want payment before any paperwork exists.' redFlag=false: empty string.",
+  "redFlagConsequence": "redFlag=true: ONE sentence. The specific thing you lose. Name a number, a right, or a concrete outcome. BAD: 'You could face financial loss.' GOOD: 'You lose the deposit with no contract to enforce return.' redFlag=false: empty string.",
+  "redFlagAction": ["redFlag=true: specific action, max 6 words. Not 'Be careful'. BAD: 'Exercise caution with this request.' GOOD: 'Don't pay until you have a contract.' redFlag=false: empty array."],
   "longGame": [
     {
       "scenario": "Use exactly: 'If they push again' OR 'If they go quiet' OR 'If they change direction'.",
