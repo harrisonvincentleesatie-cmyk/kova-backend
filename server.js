@@ -410,6 +410,40 @@ DETECTION RULE:
 → Code-switching (mixed English + local) still requires translation.
 
 ────────────────────────────────────────────────────────
+REPLY TRANSLATION PERSPECTIVE (CRITICAL)
+────────────────────────────────────────────────────────
+
+sayThis.english is the translation of sayThis.native — the message the USER is sending.
+Translate it from the USER's point of view, not as instructions to them.
+
+STEP 1 — Determine the intent of sayThis.native:
+
+IF the reply expresses a boundary, condition, decision, or the user's own action:
+→ Translate using "I" / "I'll" / "I need" / "I'm going to"
+
+Examples:
+"Anh cần xem hợp đồng trước" → "I need to see the contract first"
+"Anh chỉ chuyển khi có hợp đồng" → "I'll only transfer once there's a contract"
+"Mình chưa chắc về cái này" → "I'm not sure about this yet"
+
+IF the reply is a request, question, or asking the other person to do something:
+→ Translate using "you" / "can you" / "could you"
+
+Examples:
+"Em có thể gửi hợp đồng không?" → "Can you send the contract?"
+"Cho anh xem giấy tờ được không?" → "Can you show me the documents?"
+
+STRICT RULE:
+NEVER translate "anh phải..." or "em phải..." as "you must..."
+These are first-person statements the user is making — not commands to the other person.
+"Anh phải xem trước" → "I need to check first" (NOT "You must check first")
+
+FINAL CHECK:
+→ Read sayThis.english
+→ Ask: "Is this how the user would say this themselves?"
+→ If it sounds like instructions given to the user — wrong perspective. Rewrite.
+
+────────────────────────────────────────────────────────
 STRATEGY ALIGNMENT (CRITICAL)
 ────────────────────────────────────────────────────────
 
@@ -549,7 +583,7 @@ ${coreRules}`;
   "whatToDo": ["3–6 words. Sounds like advice from a sharp friend, not a safety manual. BAD: 'Consider requesting formal documentation.' GOOD: 'Ask for a written agreement first.'", "Same format.", "Same format."],
   "sayThis": {
     "native": "A message that DIRECTLY EXECUTES whatToDo[0]. Copy-paste ready. Sounds like a calm, real foreigner — not a lawyer, not a chatbot. In the conversation's local language. Match the energy: playful if playful, firm if firm, casual if casual. Use contractions. Slight imperfection is fine. For conflict or financial situations: calm and grounded, never aggressive or formal-legal. No 'I understand'. No ultimatums unless the situation truly demands it. ALIGNMENT CHECK: re-read whatToDo[0] — does this message actually DO that? If not, rewrite.",
-    "english": "Plain English meaning. If already English, rephrase slightly — don't just repeat.",
+    "english": "Translate sayThis.native from the USER's perspective — this is what THEY are saying. Boundaries/decisions use 'I': 'I need to see the contract first.' Requests use 'you': 'Can you send the contract?' NEVER translate first-person statements as commands to the user.",
     "tone": "2–3 words that describe how this reply FEELS. Joined with ' • '. Examples: 'Playful • Confident • Teasing' / 'Direct • Cool • Unbothered' / 'Warm • Clear • Grounded'."
   },
   "whatTheyWant": "",
@@ -686,7 +720,7 @@ Rules:
 - Sound natural. No robotic phrasing.
 
 Return ONLY a valid JSON object — no markdown, no extra text:
-{ "native": "Rewritten reply in original language.", "english": "Plain English meaning of the new reply." }`,
+{ "native": "Rewritten reply in original language.", "english": "Translate from the USER's perspective — what they are saying. Boundaries/decisions use 'I' ('I need to...'). Requests use 'you' ('Can you...'). Never translate first-person as commands to the user." }`,
         },
         {
           role: "user",
@@ -723,7 +757,7 @@ Return ONLY a valid JSON object. No markdown.
 
 {
   "native": "Natural phrasing in the user's language, matching the tone.",
-  "english": "Plain English meaning. Rephrase if already English.",
+  "english": "Translate from the USER's perspective. Boundaries/decisions use 'I'. Requests use 'you'. Never render first-person statements as commands to the user.",
   "toneExplain": "One sentence on how this sounds socially.",
   "variations": {
     "softer": "Softer version.",
@@ -798,7 +832,7 @@ Return ONLY a valid JSON object — no markdown, no extra text:
   "whatToDo": ["Short decisive action", "Short decisive action", "Short decisive action"],
   "sayThis": {
     "native": "Reply in the conversation's language. Calm, real, human. Executes whatToDo[0].",
-    "english": "Plain English meaning.",
+    "english": "Translate from the USER's perspective. Boundaries/decisions use 'I'. Requests use 'you'. Never render first-person statements as commands to the user.",
     "tone": "2–3 words joined with ' • '"
   }
 }`,
