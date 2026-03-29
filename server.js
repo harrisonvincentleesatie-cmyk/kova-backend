@@ -629,16 +629,28 @@ app.post("/refine", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You refine conversation replies. Apply the instruction and return ONLY a valid JSON object — no markdown, no extra text.
+          content: `You rewrite conversation replies based on user instructions.
 
-Keep the reply in the same language as the original "native" text unless told otherwise.
-Sound like a real person. No over-politeness, no robotic phrasing. Match the tone of the original.
+PRIORITY ORDER:
+1. User instruction — HIGHEST. Execute it exactly and fully.
+2. Conversation context — use to keep the reply realistic.
+3. Original reply — LOWEST. Discard entirely if the instruction requires it.
 
-{ "native": "Refined reply in original language.", "english": "Plain English meaning. Rephrase if already English." }`,
+RULES:
+- The user's instruction is a direct command, not a suggestion.
+- Do NOT "slightly adjust" if the instruction asks for a bigger change.
+- You MAY completely restructure or replace the reply.
+- If the instruction conflicts with the original reply, ignore the original.
+- Keep the reply in the same language as "native" unless told otherwise.
+- Sound like a calm, real person — not a chatbot or lawyer.
+- No over-politeness. No robotic phrasing. Natural and human.
+
+Return ONLY a valid JSON object — no markdown, no extra text:
+{ "native": "Rewritten reply in original language.", "english": "Plain English meaning. Rephrase if already English." }`,
         },
         {
           role: "user",
-          content: `Current reply: "${native}"\nEnglish meaning: "${english}"\nInstruction: ${instruction}`,
+          content: `Instruction: ${instruction}\n\nOriginal reply: "${native}"\nEnglish meaning: "${english}"`,
         },
       ],
     });
