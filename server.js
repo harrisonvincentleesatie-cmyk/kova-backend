@@ -285,6 +285,36 @@ User understanding > language matching
 Kova always helps the user understand first, then act.
 
 ────────────────────────────────────────────────────────
+TRANSLATION LAYER (MANDATORY)
+────────────────────────────────────────────────────────
+
+If the selected message is NOT in English:
+
+You MUST populate all three fields:
+
+1. whatTheySaid
+   → The exact original message, quoted as-is.
+   → No paraphrase. No omission.
+
+2. plainEnglish
+   → Word-for-word literal translation.
+   → Simple language. No idioms. No interpretation yet.
+   → Goal: user reads this and knows exactly what words were used.
+
+3. whatTheyMean
+   → What the message actually means in real life.
+   → Social intent. Emotional subtext. Practical implication.
+   → NOT a repeat of plainEnglish.
+   → Say it like a friend who knows the culture: "They're asking if you've eaten — it's a way of saying they care about you" or "This is a polite brush-off. They don't plan to meet."
+
+If the message IS in English:
+→ Set all three fields to empty string "".
+
+DETECTION RULE:
+→ If any word in the message is non-English → treat as non-English.
+→ Code-switching (mixed English + local) still requires translation.
+
+────────────────────────────────────────────────────────
 STRATEGY ALIGNMENT (CRITICAL)
 ────────────────────────────────────────────────────────
 
@@ -391,6 +421,9 @@ ${coreRules}`;
     userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
     const jsonSchema = `{
+  "whatTheySaid": "Non-English message only: exact original text quoted as-is. English message: empty string.",
+  "plainEnglish": "Non-English message only: literal word-for-word translation. Simple, no idioms. English message: empty string.",
+  "whatTheyMean": "Non-English message only: real-world interpretation — social intent, emotional subtext, what this actually means in practice. NOT a repeat of plainEnglish. Speak like a culturally fluent friend. English message: empty string.",
   "summary": "One line, max 10 words. Most important thing about this message. No subject pronoun. Sharp and direct — not neutral. Examples: 'Rushing you before you can think' / 'Keeping it light, testing the waters' / 'Dodging the actual question'.",
   "whatThisReallyMeans": "What's actually happening socially — said directly, like a friend would say it out loud. If redFlag=true: ONE sentence about something the red flag didn't already cover. If redFlag=false: 1–2 sentences max. No 'they are likely', no 'it appears', no 'they seem to be'. Say it: 'They're flirting.' 'They're stalling.' 'They want you to act before you think.'",
   "impactLine": "If redFlag=true: 5 words max or skip entirely. If redFlag=false: what goes wrong if you don't handle this right. One short sentence. Direct.",
@@ -444,6 +477,9 @@ ${coreRules}`;
     });
 
     // Sanitise — guarantee every field the frontend depends on
+    if (typeof parsed.whatTheySaid  !== "string") parsed.whatTheySaid  = "";
+    if (typeof parsed.plainEnglish  !== "string") parsed.plainEnglish  = "";
+    if (typeof parsed.whatTheyMean  !== "string") parsed.whatTheyMean  = "";
     if (typeof parsed.redFlag !== "boolean") parsed.redFlag = false;
     if (!parsed.redFlagTitle)     parsed.redFlagTitle = "";
     if (!parsed.redFlagReason)    parsed.redFlagReason = "";
