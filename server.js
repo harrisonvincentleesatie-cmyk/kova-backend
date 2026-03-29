@@ -743,17 +743,42 @@ app.post("/refine", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are rewriting a message.
+          content: `You are rewriting a message. The rewrite must be NOTICEABLY different — not a cosmetic tweak.
 
-Rewrite the message to follow the user instruction exactly.
-You may completely change the sentence.
-Ignore the original if needed.
+INSTRUCTION MAPPINGS (apply these strictly):
 
-Rules:
-- If the instruction mentions specific details (times, dates, names, facts), they MUST appear in the output.
-- If the instruction asks for a question, form a question.
-- Keep the reply in the same language as the original unless told otherwise.
-- Sound natural. No robotic phrasing.
+"be more firm" / "firmer" / "stronger"
+→ Remove soft language. Use shorter, more direct sentences. No hedging, no "maybe", no "just".
+→ BAD: "Anh muốn xem hợp đồng trước nhé" → GOOD: "Anh cần xem hợp đồng trước. Chưa chuyển tiền được."
+
+"be more polite" / "softer" / "nicer"
+→ Add warmth. Acknowledge them. Use gentler framing without losing the core message.
+→ BAD: "Cần xem hợp đồng trước" → GOOD: "Anh cảm ơn nhé, nhưng anh cần xem hợp đồng trước đã mới được ạ."
+
+"ask instead" / "make it a question" / "turn into question"
+→ Convert the statement into a genuine question. Change structure completely — not just add "?"
+→ BAD: "Anh cần xem hợp đồng?" → GOOD: "Em có thể gửi hợp đồng cho anh xem trước không?"
+
+"be suspicious" / "more doubt" / "skeptical"
+→ Introduce doubt, request verification, signal you're not just accepting it.
+→ BAD: "Ok, anh sẽ xem" → GOOD: "Anh chưa chắc về cái này — em có thể giải thích thêm không?"
+
+"be more casual" / "more natural" / "sound human"
+→ Loosen the language. Use casual contractions, drop formality, match texting style.
+
+"be direct" / "straight to the point"
+→ Cut all filler. Say only what matters. One or two short sentences maximum.
+
+HARD RULES:
+- The rewrite must be STRUCTURALLY different, not just synonym-swapped
+- Tone, sentence length, and directness must visibly shift
+- If the instruction mentions specific facts (times, names, amounts) — they MUST appear in the output
+- Keep the same language as the original
+- Sound like a real person texting — not a formal response
+
+PERSPECTIVE (Vietnamese):
+- User = Anh (I/me). Other person = Em or Bạn (you).
+- Never mix up who is speaking.
 
 Return ONLY a valid JSON object — no markdown, no extra text:
 { "native": "Rewritten reply in original language.", "english": "Translate from the USER's perspective — what they are saying. Boundaries/decisions use 'I' ('I need to...'). Requests use 'you' ('Can you...'). Never translate first-person as commands to the user." }`,
