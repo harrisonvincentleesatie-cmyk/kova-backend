@@ -786,42 +786,65 @@ app.post("/refine", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are rewriting a message. The rewrite must be NOTICEABLY different — not a cosmetic tweak.
+          content: `You are changing how someone BEHAVES in a conversation — not just rewording their message.
 
-INSTRUCTION MAPPINGS (apply these strictly):
+Each instruction shifts BEHAVIOR. The output must be noticeably different in tone, intent, and structure.
+
+────────────────────────────────────────────────────────
+BEHAVIOR SHIFTS
+────────────────────────────────────────────────────────
 
 "be more firm" / "firmer" / "stronger"
-→ Remove soft language. Use shorter, more direct sentences. No hedging, no "maybe", no "just".
-→ BAD: "Anh muốn xem hợp đồng trước nhé" → GOOD: "Anh cần xem hợp đồng trước. Chưa chuyển tiền được."
+BEHAVIOR: increase decisiveness. The user clearly rejects, limits, or holds their position.
+→ Remove all softeners ("maybe", "just", "nhé" used as hedging, "I think")
+→ Shorten. Make the boundary unmistakable.
+→ BEFORE: "I'll just use the official option." → AFTER: "I only use the official option."
+→ BEFORE: "Anh muốn xem hợp đồng trước nhé" → AFTER: "Anh cần xem hợp đồng. Chưa chuyển được."
 
 "be more polite" / "softer" / "nicer"
-→ Add warmth. Acknowledge them. Use gentler framing without losing the core message.
-→ BAD: "Cần xem hợp đồng trước" → GOOD: "Anh cảm ơn nhé, nhưng anh cần xem hợp đồng trước đã mới được ạ."
+BEHAVIOR: add warmth or appreciation. Decision stays the same — delivery softens.
+→ Acknowledge them. Add a gentle opener or closer.
+→ Do NOT remove the core message — just wrap it more warmly.
+→ BEFORE: "Need to see the contract first." → AFTER: "Thanks — could you send the contract first? Just want to check it over."
+→ BEFORE: "Anh chưa chuyển được." → AFTER: "Cảm ơn em nhé, nhưng anh cần xem hợp đồng trước đã ạ."
+
+"make it shorter" / "shorter" / "more concise"
+BEHAVIOR: strip to the minimal natural expression. Cut every word that isn't load-bearing.
+→ Do NOT add new meaning. Do NOT change the message — just reduce it.
+→ BEFORE: "I think I'd prefer to just go through the official channel for this one." → AFTER: "I'll use the official option."
+→ BEFORE: "Anh nghĩ là anh nên dùng kênh chính thức cho tiện hơn." → AFTER: "Anh dùng kênh chính thức nhé."
 
 "ask instead" / "make it a question" / "turn into question"
-→ Convert the statement into a genuine question. Change structure completely — not just add "?"
-→ BAD: "Anh cần xem hợp đồng?" → GOOD: "Em có thể gửi hợp đồng cho anh xem trước không?"
+BEHAVIOR: convert to a genuine question — ONLY if a real person would actually ask in this situation.
+→ Change structure completely — not just add "?"
+→ If asking is unnatural in context, keep as a statement and note this.
+→ BEFORE: "Send the contract first." → AFTER: "Can you send the contract first?"
+→ BEFORE: "Anh cần xem hợp đồng trước." → AFTER: "Em có thể gửi hợp đồng cho anh xem trước không?"
 
 "be suspicious" / "more doubt" / "skeptical"
-→ Introduce doubt, request verification, signal you're not just accepting it.
-→ BAD: "Ok, anh sẽ xem" → GOOD: "Anh chưa chắc về cái này — em có thể giải thích thêm không?"
+BEHAVIOR: introduce visible doubt. Signal you're not accepting at face value.
+→ Add a question, express hesitation, or request explanation.
+→ BEFORE: "Ok, I'll check." → AFTER: "Not sure about this — can you explain more?"
+→ BEFORE: "Ok anh sẽ xem." → AFTER: "Anh chưa chắc — em giải thích rõ hơn được không?"
 
 "be more casual" / "more natural" / "sound human"
-→ Loosen the language. Use casual contractions, drop formality, match texting style.
+BEHAVIOR: match how a real person texts. Drop formal structure. Use contractions, particles, natural rhythm.
 
 "be direct" / "straight to the point"
-→ Cut all filler. Say only what matters. One or two short sentences maximum.
+BEHAVIOR: one sentence. No opener, no softener, no explanation — just the point.
 
-HARD RULES:
-- The rewrite must be STRUCTURALLY different, not just synonym-swapped
-- Tone, sentence length, and directness must visibly shift
-- If the instruction mentions specific facts (times, names, amounts) — they MUST appear in the output
+────────────────────────────────────────────────────────
+HARD RULES
+────────────────────────────────────────────────────────
+
+- Behavior, tone, AND structure must all shift — not just word choice
+- If the instruction mentions specific facts (times, names, amounts) — they MUST appear in output
 - Keep the same language as the original
-- Sound like a real person texting — not a formal response
+- Output must sound like a real person in their own language and culture — not a translated template
+- Never produce a grammatically correct but culturally foreign sentence
 
 PERSPECTIVE (Vietnamese):
-- User = Anh (I/me). Other person = Em or Bạn (you).
-- Never mix up who is speaking.
+User = Anh (I/me). Other person = Em or Bạn (you). Never mix.
 
 Return ONLY a valid JSON object — no markdown, no extra text:
 { "native": "Rewritten reply in original language.", "english": "Translate from the USER's perspective — what they are saying. Boundaries/decisions use 'I' ('I need to...'). Requests use 'you' ('Can you...'). Never translate first-person as commands to the user." }`,
