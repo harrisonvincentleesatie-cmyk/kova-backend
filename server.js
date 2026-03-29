@@ -188,6 +188,38 @@ Say it directly:
 "They're flirting" NOT "They appear to be engaging…"
 
 ────────────────────────────────────────────────────────
+RISK CLASSIFICATION RULES
+────────────────────────────────────────────────────────
+
+DEFAULT: classify based on context.
+
+HARD MINIMUM — these scenarios can NEVER be Low risk:
+
+1. INFORMAL MONEY EXCHANGE
+   Triggers: "better than bank", "no fee", "better rate", "I can help you exchange", "no commission", informal currency exchange offers
+   → Minimum: MEDIUM
+   → Reason: Common setup for bad rates, counterfeit cash, or tourist targeting. Even if the person seems friendly.
+
+2. UNSOLICITED FINANCIAL HELP
+   Triggers: offering to handle money transfers, "I know a guy", moving money outside official channels
+   → Minimum: MEDIUM
+   → Reason: These offers are how most informal financial scams begin.
+
+3. URGENCY + MONEY COMBINATION
+   Triggers: deadline + payment request, "limited time" + any financial ask
+   → Minimum: HIGH
+
+CLASSIFICATION RULE:
+→ If any trigger above is present, override any lower classification.
+→ Do not soften to Low because the tone is friendly or casual.
+→ Friendly tone does not reduce financial risk.
+
+EXPLANATION RULE:
+→ When applying a hard minimum, riskRead MUST explain why simply.
+→ Example: "Informal exchange offers often have hidden costs or risks."
+→ NOT: "This appears to be a potentially risky situation."
+
+────────────────────────────────────────────────────────
 RED FLAG CHECK (RUN FIRST)
 ────────────────────────────────────────────────────────
 
@@ -427,8 +459,8 @@ ${coreRules}`;
   "summary": "One line, max 10 words. Most important thing about this message. No subject pronoun. Sharp and direct — not neutral. Examples: 'Rushing you before you can think' / 'Keeping it light, testing the waters' / 'Dodging the actual question'.",
   "whatThisReallyMeans": "What's actually happening socially — said directly, like a friend would say it out loud. If redFlag=true: ONE sentence about something the red flag didn't already cover. If redFlag=false: 1–2 sentences max. No 'they are likely', no 'it appears', no 'they seem to be'. Say it: 'They're flirting.' 'They're stalling.' 'They want you to act before you think.'",
   "impactLine": "If redFlag=true: 5 words max or skip entirely. If redFlag=false: what goes wrong if you don't handle this right. One short sentence. Direct.",
-  "riskLevel": "Low" or "Medium" or "High",
-  "riskRead": "One sentence, under 12 words. Say the actual risk — not a category.",
+  "riskLevel": "Low" or "Medium" or "High" — apply RISK CLASSIFICATION RULES before outputting this. Informal money offers are never Low.",
+  "riskRead": "One sentence, under 12 words. Say the actual risk plainly — not a category name, not vague language. If financial risk: name it specifically (bad rate, counterfeit, scam setup).",
   "whatToDo": ["Short decisive action — sounds like what you'd tell a friend. This becomes the strategy sayThis must execute.", "Same", "Same"],
   "sayThis": {
     "native": "A message that DIRECTLY EXECUTES whatToDo[0]. Not a different action. Not a softer version. The user must be able to copy this and perform the strategy in whatToDo[0]. In the conversation's language. Match the energy exactly — playful if playful, firm if firm, casual if casual. Use contractions. Slight imperfection is fine. No over-politeness. No 'I understand'. No full formal sentences unless the chat is clearly formal. ALIGNMENT CHECK: re-read whatToDo[0], then ask 'does this message DO that?' — if not, rewrite.",
