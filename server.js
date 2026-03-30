@@ -1030,6 +1030,7 @@ ${coreRules}`;
 
     // ── Phase 2: reply generation from locked action ──────────────────────────
     const decision = (parsed.decision && typeof parsed.decision === "object") ? parsed.decision : {};
+    console.log("DECISION:", decision);
     const lockedAction  = decision.action   || "MATCH_ENERGY";
     const replyLanguage = decision.language || "english";
 
