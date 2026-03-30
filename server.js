@@ -62,6 +62,108 @@ function dedupeWhatToDo(items) {
   return kept;
 }
 
+// ─── Shared prompts ───────────────────────────────────────────────────────────
+
+const replySystemPrompt = `You are Kova's reply generator — Phase 2 of a strict two-phase pipeline.
+
+You receive a LOCKED action directive. Your ONLY job is to execute it.
+
+────────────────────────────────────────────────────────
+CRITICAL RULES (non-negotiable)
+────────────────────────────────────────────────────────
+
+1. EXECUTE THE ACTION — do not re-evaluate it or change it.
+2. DO NOT re-assess risk or intent.
+3. DO NOT reference or consider the original message — you do not have it.
+4. DO NOT introduce new intent beyond what the action requires.
+5. DO NOT follow curiosity, explore further, or soften the decision.
+6. ONE reply only. 1 sentence preferred. 2 maximum.
+
+────────────────────────────────────────────────────────
+ACTION → REPLY EXECUTION
+────────────────────────────────────────────────────────
+
+USE_GRAB
+→ Decline off-app transport. Use official app.
+→ Vietnamese: "Anh đi Grab, cảm ơn."
+→ English: "I'll just use Grab, thanks."
+
+ASK_CONTRACT
+→ Request the contract before proceeding. One ask only.
+→ Vietnamese: "Anh cần xem hợp đồng trước nhé."
+→ English: "I need to see the contract first."
+
+DECLINE
+→ Reject cleanly. No explanation needed.
+→ Vietnamese: "Thôi cảm ơn em, anh không cần."
+→ English: "Thanks, but I'll pass."
+
+EXIT
+→ End the interaction. Minimal.
+→ Vietnamese: "Anh bận rồi nhé."
+→ English: "I've got to go."
+
+HOLD_PAYMENT
+→ Do not agree to send money. Express delay or refusal.
+→ Vietnamese: "Chưa chuyển được — anh xem lại đã."
+→ English: "I can't send that right now."
+
+VERIFY_IDENTITY
+→ Request proof or confirmation. Calm, one request.
+→ Vietnamese: "Em có thể xác nhận thêm cho anh không?"
+→ English: "Can you confirm that for me?"
+
+HOLD_POSITION
+→ Stay firm. No softening.
+→ Vietnamese: "Anh chưa đồng ý mức đó."
+→ English: "That doesn't work for me."
+
+MATCH_ENERGY
+→ Use the context field to generate a natural, human reply.
+→ Match the energy of the conversation — no agenda, no strategy.
+→ One sentence, instinctive, sounds like a real person.
+
+IGNORE
+→ Output empty strings. No reply.
+
+────────────────────────────────────────────────────────
+LANGUAGE + CULTURAL RULES
+────────────────────────────────────────────────────────
+
+Reply in the language specified. Match cultural register.
+
+Vietnamese:
+- Casual particles: "nhé", "đi", "vậy", "nè"
+- User = Anh (I/me). Other person = Em or Bạn. Never mix.
+- "Anh cần..." / "Anh sẽ..." = user's own statement — NOT a command.
+- NEVER produce commands directed at the user.
+
+English:
+- Contractions fine. Incomplete sentences fine.
+- Brief and direct.
+
+Other languages:
+- Match rhythm, register, and directness of that language.
+- Never produce a correct-but-foreign sentence.
+
+────────────────────────────────────────────────────────
+REALISM CHECK (mandatory before output)
+────────────────────────────────────────────────────────
+
+"Would a real person type this exact sentence in a chat?"
+If not → simplify, shorten, make it natural.
+Output ONLY the version that passes.
+
+────────────────────────────────────────────────────────
+OUTPUT
+────────────────────────────────────────────────────────
+
+Return ONLY a valid JSON object — no markdown, no extra text:
+{
+  "native": "Reply in the conversation's language.",
+  "english": "Translate from the USER's perspective. Boundaries use 'I'. Requests use 'you'. Never a command to the user."
+}`;
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 app.get("/", (req, res) => {
@@ -121,38 +223,10 @@ Correct decision: do NOT engage → exit
 
 This decision must directly control whatToDo and sayThis.
 
-STEP 3 — GENERATE A REPLY
-Write a reply that executes the primary goal. One sentence preferred. Two maximum.
-
-STEP 4 — IMPROVE IT
-Do not output the first version.
-Ask: is there a more natural, shorter, or more effective way to say this?
-If yes — use that version.
-
-STEP 5 — HUMAN REALISM TEST
-Ask: "Would a real person actually type this exact sentence in a chat?"
-If not: simplify, shorten, make it more natural.
-The reply must feel like instinct, not construction.
-
-STEP 6 — OUTPUT
-Return exactly ONE reply. The best version. Not the safe version.
+STEP 3 — LOCK THE DECISION
+Output the decision object. Phase 2 will generate the reply separately — do not generate sayThis here.
 
 ────────────────────────────────────────────────────────
-REPLY STANDARDS
-────────────────────────────────────────────────────────
-
-AVOID:
-- formal phrasing, complete textbook sentences
-- over-explaining or justifying
-- repeated structure across sentences
-- anything that sounds like AI or a translation
-
-PREFER:
-- short, natural chat language
-- implied meaning over stated meaning
-- conversational flow
-- confident, intentional phrasing — not passive or overly safe
-
 NO REDUNDANCY:
 
 Each field must add NEW information.
@@ -862,47 +936,48 @@ ${coreRules}`;
     }
     userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
-    const jsonSchema = `OUTPUT STANDARD: every text field must be instantly readable — no filler, no padding, no full formal sentences unless truly needed. If the user can't understand a field in 3 seconds, it's too long.
+    // ── Phase 1: analysis + decision ─────────────────────────────────────────
+    const jsonSchemaAnalysis = `OUTPUT STANDARD: every text field must be instantly readable — no filler, no padding. If the user can't understand a field in 3 seconds, it's too long.
 
 {
   "whatTheySaid": "Non-English only: exact original text. English: empty string.",
-  "whatTheyMean": "Non-English only: one sharp line — what they said AND what they actually mean. 'They want money before a contract — no paper trail.' English: empty string.",
-  "summary": "Max 6 words. The single most important thing. No pronoun. 'Pushing for money with no paperwork.'",
-  "whatThisReallyMeans": "One line. Real intent, said directly. 'Trying to move you off-platform.' 'Locking you in before you can think.' No hedging.",
-  "impactLine": "One line. What breaks if you don't act. 'You pay with no way to get it back.' redFlag=true: empty string.",
+  "whatTheyMean": "Non-English only: one sharp line — what they said AND what they actually mean. English: empty string.",
+  "summary": "Max 6 words. The single most important thing. No pronoun.",
+  "whatThisReallyMeans": "One line. Real intent, said directly. No hedging.",
+  "impactLine": "One line. What breaks if you don't act. redFlag=true: empty string.",
   "riskLevel": "Low" or "Medium" or "High" — apply RISK CLASSIFICATION RULES.",
-  "riskRead": "Under 8 words. The actual risk, named plainly. 'Unofficial taxi — no tracking, easy to overcharge.' 'No contract = no recourse.'",
-  "whatToDo": ["ONE action only. Max 5 words. Decisive, immediately usable. 'Use Grab.' / 'Ask for the contract.' / 'Don't pay yet.'", "", ""],
-  "sayThis": {
-    "native": "ONE reply. 1 sentence. Natural local speaker. Executes the action above. No formal phrasing. No over-explaining. Must pass: 'Would a real person type this in a chat?'",
-    "english": "User's perspective — what they are saying. 'I need to see it first.' / 'Can you send the contract?' Never a command directed at the user.",
-    "tone": "2–3 words. 'Direct • Calm' / 'Light • Playful' / 'Firm • Clear'."
-  },
+  "riskRead": "Under 8 words. The actual risk, named plainly.",
+  "whatToDo": ["ONE action only. Max 5 words. Decisive, immediately usable.", "", ""],
   "whatTheyWant": "",
   "redFlag": true or false,
-  "redFlagTitle": "redFlag=true: max 4 words, plain warning. 'No contract, no protection.' redFlag=false: empty string.",
-  "redFlagReason": "redFlag=true: one line. What is happening, named directly. 'They want payment before paperwork exists.' redFlag=false: empty string.",
-  "redFlagConsequence": "redFlag=true: one line. The specific loss. 'Deposit gone, no contract to enforce.' redFlag=false: empty string.",
-  "redFlagAction": ["redFlag=true: one action, max 5 words. 'Don't pay until contract signed.' redFlag=false: empty array."],
+  "redFlagTitle": "redFlag=true: max 4 words, plain warning. redFlag=false: empty string.",
+  "redFlagReason": "redFlag=true: one line. What is happening, named directly. redFlag=false: empty string.",
+  "redFlagConsequence": "redFlag=true: one line. The specific loss. redFlag=false: empty string.",
+  "redFlagAction": ["redFlag=true: one action, max 5 words. redFlag=false: empty array."],
   "longGame": [
     {
       "scenario": "Use exactly: 'If they push again' OR 'If they go quiet' OR 'If they change direction'.",
-      "action": "2–4 words. Match situation energy. 'Stay firm' / 'Give it space' / 'Keep it light'.",
+      "action": "2–4 words. Match situation energy.",
       "reply": "One natural message in conversation language. Short. Human."
     }
-  ]
+  ],
+  "decision": {
+    "primaryGoal": "AVOID" or "VERIFY" or "NEGOTIATE" or "SOCIAL",
+    "action": "USE_GRAB or DECLINE or ASK_CONTRACT or EXIT or VERIFY_IDENTITY or HOLD_PAYMENT or HOLD_POSITION or MATCH_ENERGY or IGNORE — or short descriptive action",
+    "language": "The conversation language as a single word (e.g. vietnamese, english, thai, spanish)"
+  }
 }`;
 
-    const response = await client.chat.completions.create({
+    const analysisResponse = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
-        { role: "system", content: systemPrompt + "\n\n" + jsonSchema },
+        { role: "system", content: systemPrompt + "\n\n" + jsonSchemaAnalysis },
         { role: "user",   content: userContent },
       ],
     });
 
-    const raw = response.choices[0].message.content;
-    const parsed = parseJSON(raw, {
+    const rawAnalysis = analysisResponse.choices[0].message.content;
+    const parsed = parseJSON(rawAnalysis, {
       summary: "Could not read the image.",
       whatThisReallyMeans: "Could not read the image clearly.",
       impactLine: "Try uploading a clearer screenshot.",
@@ -917,7 +992,38 @@ ${coreRules}`;
       redFlagConsequence: "",
       redFlagAction: [],
       longGame: [],
+      decision: { primaryGoal: "SOCIAL", action: "MATCH_ENERGY", language: "english" },
     });
+
+    // ── Phase 2: reply generation from locked action ──────────────────────────
+    const decision = (parsed.decision && typeof parsed.decision === "object") ? parsed.decision : {};
+    const lockedAction  = decision.action   || "MATCH_ENERGY";
+    const replyLanguage = decision.language || "english";
+
+    const replyResponse = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: replySystemPrompt },
+        {
+          role: "user",
+          content: `Action: ${lockedAction}\nLanguage: ${replyLanguage}`,
+        },
+      ],
+    });
+
+    const rawReply = replyResponse.choices[0].message.content;
+    const replyResult = parseJSON(rawReply, { native: "", english: "" });
+
+    // Attach reply to parsed — sayThis comes ONLY from Phase 2
+    parsed.sayThis = {
+      native:  typeof replyResult.native  === "string" ? replyResult.native  : "",
+      english: typeof replyResult.english === "string" ? replyResult.english : "",
+      tone:    parsed.sayThis?.tone || "",
+    };
+
+    // Expose decision fields at top level
+    parsed.primaryGoal = decision.primaryGoal || "SOCIAL";
+    delete parsed.decision;
 
     // Sanitise — guarantee every field the frontend depends on
     if (typeof parsed.whatTheySaid !== "string") parsed.whatTheySaid = "";
@@ -988,11 +1094,178 @@ app.post("/ocr", async (req, res) => {
   }
 });
 
+// ── /decide — Phase 1: decision engine ────────────────────────────────────────
+
+app.post("/decide", async (req, res) => {
+  try {
+    const { selectedMessage, conversationContext } = req.body;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are Kova's decision engine — Phase 1 of a strict two-phase pipeline.
+
+Your ONLY job: analyze the situation and output a LOCKED decision.
+You are NOT generating a reply. You are deciding what action to take.
+This output becomes the single source of truth. The reply generator will execute it — it will NOT re-evaluate.
+
+────────────────────────────────────────────────────────
+DECISION PROCESS
+────────────────────────────────────────────────────────
+
+STEP 1 — READ THE SITUATION
+Understand what is actually happening — not just the surface words.
+Identify who is speaking, what they want, and any signals (pressure, money, urgency, tone).
+
+STEP 2 — CLASSIFY RISK
+
+LOW  — Normal conversation, casual request, no pressure or money involved.
+MEDIUM — Unclear intent, possible manipulation, informal financial offers.
+HIGH  — Active scam signals, urgent money pressure, off-platform requests, clear threat.
+
+HARD MINIMUMS (non-overridable):
+- Off-app taxi / transport offer → HIGH
+- Payment before contract → HIGH
+- Urgency + money combined → HIGH
+- Informal money exchange ("better rate", "no fee", "I can help exchange") → MEDIUM minimum
+- Unsolicited financial help → MEDIUM minimum
+
+Do NOT soften risk because the tone is friendly. Friendly tone does not reduce financial risk.
+
+STEP 3 — PICK PRIMARY GOAL (exactly one)
+
+AVOID   — Scam signals, pressure, discomfort, unsolicited offers, street situations.
+VERIFY  — Formal context (landlord, employer, contract) — something is unclear or unconfirmed.
+NEGOTIATE — Price, terms, or conditions — user holds position or pushes back.
+SOCIAL  — Casual chat, banter, flirting, friendly exchange.
+
+Selection rules:
+- AVOID beats VERIFY when scam signals are present.
+- LOW-TRUST street situations → AVOID, not VERIFY (no verification is realistic on the street).
+- SOCIAL → never apply strategy or caution.
+
+STEP 4 — CHOOSE ONE ACTION
+
+Standard action identifiers:
+USE_GRAB        — decline off-app transport, use official rideshare app
+DECLINE         — reject offer or request cleanly
+ASK_CONTRACT    — request formal paperwork before proceeding
+EXIT            — leave the interaction entirely
+VERIFY_IDENTITY — request identification or confirmation
+HOLD_PAYMENT    — do not send money yet
+HOLD_POSITION   — negotiation — stay firm on current terms
+MATCH_ENERGY    — social/flirt context — reply naturally and humanly
+IGNORE          — do not engage
+
+Use a short descriptive action if none fit exactly. Keep it concise.
+
+SITUATION → ACTION EXAMPLES:
+- Taxi driver asks to pay cash off-app → USE_GRAB
+- Landlord asks for deposit before contract → ASK_CONTRACT
+- Someone pressuring urgently + money → DECLINE
+- Casual flirty message → MATCH_ENERGY
+- Negotiation, they push too high → HOLD_POSITION
+- Suspicious stranger approaching → EXIT
+
+CRITICAL:
+If risk is HIGH: action MUST be EXIT, DECLINE, or USE_GRAB — never explore or engage further.
+If risk is MEDIUM: action must be protective — never pure engagement.
+User curiosity ("ask", "tell me more") does NOT change the action in risky situations.
+
+STEP 5 — ENCODE CONTEXT (required for SOCIAL, optional for others)
+
+For SOCIAL / MATCH_ENERGY: describe the conversational intent in 1 short line.
+This is what the reply generator uses to produce a natural human message.
+
+Examples:
+"Playful biting comment — match the tease, keep it light."
+"Checking in warmly — respond in kind, no agenda."
+"Flirty challenge — punchy, slightly charged reply."
+
+For non-SOCIAL actions: set context to empty string "".
+
+────────────────────────────────────────────────────────
+OUTPUT
+────────────────────────────────────────────────────────
+
+Return ONLY a valid JSON object — no markdown, no extra text:
+{
+  "riskLevel": "LOW" | "MEDIUM" | "HIGH",
+  "primaryGoal": "AVOID" | "VERIFY" | "NEGOTIATE" | "SOCIAL",
+  "action": "USE_GRAB" | "DECLINE" | "ASK_CONTRACT" | "EXIT" | "MATCH_ENERGY" | ...,
+  "context": "Short line for SOCIAL — conversational intent. Empty string otherwise."
+}`,
+        },
+        {
+          role: "user",
+          content: conversationContext
+            ? `Message: "${selectedMessage}"\n\nConversation context:\n${conversationContext}`
+            : `Message: "${selectedMessage}"`,
+        },
+      ],
+    });
+
+    const raw = response.choices[0].message.content;
+    const parsed = parseJSON(raw, {
+      riskLevel: "LOW",
+      primaryGoal: "SOCIAL",
+      action: "MATCH_ENERGY",
+      context: "",
+    });
+
+    if (!["LOW", "MEDIUM", "HIGH"].includes(parsed.riskLevel)) parsed.riskLevel = "LOW";
+    if (!["AVOID", "VERIFY", "NEGOTIATE", "SOCIAL"].includes(parsed.primaryGoal)) parsed.primaryGoal = "SOCIAL";
+    if (typeof parsed.action !== "string" || !parsed.action.trim()) parsed.action = "MATCH_ENERGY";
+    if (typeof parsed.context !== "string") parsed.context = "";
+
+    res.json(parsed);
+
+  } catch (err) {
+    console.error("/decide error:", err.message);
+    res.json({ riskLevel: "LOW", primaryGoal: "SOCIAL", action: "MATCH_ENERGY", context: "" });
+  }
+});
+
+// ── /reply — Phase 2: execute locked action ────────────────────────────────────
+
+app.post("/reply", async (req, res) => {
+  try {
+    const { action, language, context } = req.body;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: replySystemPrompt },
+        {
+          role: "user",
+          content: [
+            `Action: ${action}`,
+            `Language: ${language || "detect from action context"}`,
+            context ? `Context: ${context}` : "",
+          ].filter(Boolean).join("\n"),
+        },
+      ],
+    });
+
+    const raw = response.choices[0].message.content;
+    const parsed = parseJSON(raw, { native: "", english: "" });
+    if (typeof parsed.native !== "string") parsed.native = "";
+    if (typeof parsed.english !== "string") parsed.english = "";
+    res.json(parsed);
+
+  } catch (err) {
+    console.error("/reply error:", err.message);
+    res.json({ native: "", english: "" });
+  }
+});
+
 // ── /refine — refine a generated reply ────────────────────────────────────────
 
 app.post("/refine", async (req, res) => {
   try {
-    const { native, instruction } = req.body;
+    const { native, instruction, action } = req.body;
 
     const response = await client.chat.completions.create({
       model: "gpt-4.1-mini",
@@ -1001,6 +1274,27 @@ app.post("/refine", async (req, res) => {
           role: "system",
           content: `You are Kova. Your job is to generate what the user SHOULD say — not translate what they typed.
 
+────────────────────────────────────────────────────────
+ACTION LOCK (CRITICAL — check first)
+────────────────────────────────────────────────────────
+
+${action ? `The decision has been locked: action = "${action}"
+
+This action CANNOT be changed by refinement.
+Refinement can ONLY adjust: tone, wording, length, delivery.
+
+Examples of what IS allowed:
+- "be more firm" → same action, harder delivery
+- "shorter" → same action, fewer words
+- "be more polite" → same action, warmer tone
+
+Examples of what is NOT allowed:
+- "ask them how it works" when action = USE_GRAB → NOT allowed (would change action)
+  Exception: if user explicitly insists and it is not extremely dangerous → allow controlled deviation (see REFINEMENT CONTROL RULE below)
+
+RULE: If user instruction would change the action and user is NOT explicitly insisting → adjust tone, keep action.
+` : `No locked action provided. Treat the original reply's direction as the default behavior to preserve.
+`}
 ────────────────────────────────────────────────────────
 CRITICAL RULE: INPUT IS INTENT, NOT CONTENT
 ────────────────────────────────────────────────────────
@@ -1012,7 +1306,7 @@ Do NOT translate it. Do NOT reuse their wording. Do NOT mirror their sentence st
 PROCESS:
 1. Read the original reply (what Kova already suggested)
 2. Read the user's input — interpret it as INTENT
-3. Generate a NEW reply that achieves that intent, in the conversation's language
+3. Generate a NEW reply that achieves that intent, within the bounds of the locked action
 
 INTENT EXAMPLES:
 
@@ -1033,6 +1327,30 @@ INTENT EXAMPLES:
 "I don't want to be rude but I want to decline"
 → Intent: soft decline
 → Generate: "Cảm ơn em nhé, lần này anh chưa tiện." / "Thanks, but I'll pass this time."
+
+────────────────────────────────────────────────────────
+REFINEMENT CONTROL RULE
+────────────────────────────────────────────────────────
+
+Default: follow the safest, most protective decision established in the original reply.
+If the user explicitly insists on different behavior, and it is NOT extremely dangerous: allow controlled deviation.
+
+Priority:
+1. Default = follow safest decision (the original reply's direction)
+2. If user pushes for alternative behavior → allow it, but keep it realistic and aware
+3. Never blindly follow unsafe curiosity — guide first, allow second
+
+Example:
+Original reply default: "I'll use Grab, thanks." (protective)
+User insists: "ask them how it works"
+→ Allowed: "Xe anh chạy kiểu nào vậy?" (curious but controlled — not naive)
+→ NOT: "Yes great idea, please explain everything to me!"
+
+Rules:
+- Do not block user control entirely — they may have good reasons to deviate
+- Do not ignore safety signals — show awareness even when complying
+- Extreme danger (scam confirmation, dangerous payment, clear threat) = do not allow override
+- Moderate situations = allow deviation with realism preserved
 
 ────────────────────────────────────────────────────────
 SHORTHAND INSTRUCTIONS (directional shifts)
@@ -1063,7 +1381,11 @@ Return ONLY a valid JSON object — no markdown, no extra text:
         },
         {
           role: "user",
-          content: `Original reply:\n${native}\n\nUser input (interpret as intent):\n${instruction}`,
+          content: [
+            `Original reply:\n${native}`,
+            action ? `Locked action: ${action}` : "",
+            `User instruction (interpret as intent):\n${instruction}`,
+          ].filter(Boolean).join("\n\n"),
         },
       ],
     });
