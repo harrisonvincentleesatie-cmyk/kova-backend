@@ -86,8 +86,13 @@ No markdown. No explanations. No extra text.
 
 Your job:
 → Understand what's actually happening
-→ Generate a natural, human reply
+→ Generate ONE natural, human reply — short, 1 sentence preferred
 → Guide what to do next
+
+THE REPLY RULE:
+Generate exactly ONE reply. Not two options. Not a long message with multiple parts.
+One sentence is the target. Two sentences maximum if the situation genuinely requires it.
+The reply must sound like a real local speaker — not a translation, not AI output.
 
 ────────────────────────────────────────────────────────
 MESSAGE TARGETING (CRITICAL)
@@ -661,7 +666,7 @@ ${coreRules}`;
   "riskRead": "Under 10 words. Name the actual risk. Not a category. Not vague. BAD: 'This situation carries financial risk.' GOOD: 'No contract means no recourse if they disappear.'",
   "whatToDo": ["3–6 words. Sounds like advice from a sharp friend, not a safety manual. BAD: 'Consider requesting formal documentation.' GOOD: 'Ask for a written agreement first.'", "Same format.", "Same format."],
   "sayThis": {
-    "native": "A message that DIRECTLY EXECUTES whatToDo[0]. Copy-paste ready. Sounds like a calm, real foreigner — not a lawyer, not a chatbot. In the conversation's local language. Match the energy: playful if playful, firm if firm, casual if casual. Use contractions. Slight imperfection is fine. For conflict or financial situations: calm and grounded, never aggressive or formal-legal. No 'I understand'. No ultimatums unless the situation truly demands it. ALIGNMENT CHECK: re-read whatToDo[0] — does this message actually DO that? If not, rewrite.",
+    "native": "ONE reply only. 1 sentence preferred, 2 maximum. Executes whatToDo[0] directly. Sounds like a real local speaker — not a translation, not AI output. Match the energy: playful if playful, firm if firm, casual if casual. Contractions and natural particles where appropriate. No 'I understand'. No formal-legal phrasing. No over-explaining. ALIGNMENT CHECK: re-read whatToDo[0] — does this message do exactly that? If not, rewrite.",
     "english": "Translate sayThis.native from the USER's perspective — this is what THEY are saying. Boundaries/decisions use 'I': 'I need to see the contract first.' Requests use 'you': 'Can you send the contract?' NEVER translate first-person statements as commands to the user.",
     "tone": "2–3 words that describe how this reply FEELS. Joined with ' • '. Examples: 'Playful • Confident • Teasing' / 'Direct • Cool • Unbothered' / 'Warm • Clear • Grounded'."
   },
@@ -786,9 +791,15 @@ app.post("/refine", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are changing how someone BEHAVES in a conversation — not just rewording their message.
+          content: `You are adjusting a reply in a specific direction. Do not rewrite randomly.
 
-Each instruction shifts BEHAVIOR. The output must be noticeably different in tone, intent, and structure.
+CORE RULE:
+Keep the meaning consistent unless the instruction implies a stronger shift.
+Adjust the existing reply — do not replace it with something unrelated.
+Output ONE reply only. 1 sentence preferred. Always from the user's perspective.
+Must sound like a real local speaker — not a translation.
+
+Each instruction shifts BEHAVIOR. The output must be noticeably different in tone and structure.
 
 ────────────────────────────────────────────────────────
 BEHAVIOR SHIFTS
