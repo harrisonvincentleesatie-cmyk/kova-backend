@@ -1031,7 +1031,7 @@ ${coreRules}`;
     // ── Phase 2: reply generation from locked action ──────────────────────────
     const decision = (parsed.decision && typeof parsed.decision === "object") ? parsed.decision : {};
     console.log("DECISION:", decision);
-    const lockedAction  = decision.action   || "MATCH_ENERGY";
+    let lockedAction = (decision.action || "MATCH_ENERGY").toUpperCase().replace(/\s+/g, "_");
     const replyLanguage = decision.language || "english";
 
     // Direct mapping for core actions — no AI call
