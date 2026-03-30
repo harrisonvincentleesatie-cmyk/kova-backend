@@ -701,31 +701,33 @@ ${coreRules}`;
     }
     userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
-    const jsonSchema = `{
-  "whatTheySaid": "Non-English only: exact original text, quoted as-is. English: empty string.",
-  "whatTheyMean": "Non-English only: one sentence — plain meaning + real intent combined. What the words mean AND what they're actually doing. No filler. English: empty string. BAD: 'They are asking you to send money quickly.' GOOD: 'They want money before a contract — no paper trail, no protection for you.'",
-  "summary": "Max 8 words. The single most important thing. No subject pronoun. Punchy, not neutral. BAD: 'They seem to be in a hurry about the deposit.' GOOD: 'Pushing for money with no paperwork.'",
-  "whatThisReallyMeans": "ONE sentence. The actual intent — social, strategic, or emotional. Say it like you're telling a friend. No hedging. No 'appears to' or 'seems like'. Never repeat summary. BAD: 'They appear to be attempting to get you to commit before you have had a chance to think.' GOOD: 'They're locking you in before you can ask questions.'",
-  "impactLine": "ONE sentence. What breaks if you don't handle this right. Specific, not vague. redFlag=true: skip this field entirely (empty string). BAD: 'This could potentially lead to problems.' GOOD: 'You agree to something you can't walk back.'",
-  "riskLevel": "Low" or "Medium" or "High" — apply RISK CLASSIFICATION RULES. Informal money offers are never Low.",
-  "riskRead": "Under 10 words. Name the actual risk. Not a category. Not vague. BAD: 'This situation carries financial risk.' GOOD: 'No contract means no recourse if they disappear.'",
-  "whatToDo": ["3–6 words. Sounds like advice from a sharp friend, not a safety manual. BAD: 'Consider requesting formal documentation.' GOOD: 'Ask for a written agreement first.'", "Same format.", "Same format."],
+    const jsonSchema = `OUTPUT STANDARD: every text field must be instantly readable — no filler, no padding, no full formal sentences unless truly needed. If the user can't understand a field in 3 seconds, it's too long.
+
+{
+  "whatTheySaid": "Non-English only: exact original text. English: empty string.",
+  "whatTheyMean": "Non-English only: one sharp line — what they said AND what they actually mean. 'They want money before a contract — no paper trail.' English: empty string.",
+  "summary": "Max 6 words. The single most important thing. No pronoun. 'Pushing for money with no paperwork.'",
+  "whatThisReallyMeans": "One line. Real intent, said directly. 'Trying to move you off-platform.' 'Locking you in before you can think.' No hedging.",
+  "impactLine": "One line. What breaks if you don't act. 'You pay with no way to get it back.' redFlag=true: empty string.",
+  "riskLevel": "Low" or "Medium" or "High" — apply RISK CLASSIFICATION RULES.",
+  "riskRead": "Under 8 words. The actual risk, named plainly. 'Unofficial taxi — no tracking, easy to overcharge.' 'No contract = no recourse.'",
+  "whatToDo": ["ONE action only. Max 5 words. Decisive, immediately usable. 'Use Grab.' / 'Ask for the contract.' / 'Don't pay yet.'", "", ""],
   "sayThis": {
-    "native": "ONE reply only. 1 sentence preferred, 2 maximum. Executes whatToDo[0] directly. Sounds like a real local speaker — not a translation, not AI output. Match the energy: playful if playful, firm if firm, casual if casual. Contractions and natural particles where appropriate. No 'I understand'. No formal-legal phrasing. No over-explaining. ALIGNMENT CHECK: re-read whatToDo[0] — does this message do exactly that? If not, rewrite.",
-    "english": "Translate sayThis.native from the USER's perspective — this is what THEY are saying. Boundaries/decisions use 'I': 'I need to see the contract first.' Requests use 'you': 'Can you send the contract?' NEVER translate first-person statements as commands to the user.",
-    "tone": "2–3 words that describe how this reply FEELS. Joined with ' • '. Examples: 'Playful • Confident • Teasing' / 'Direct • Cool • Unbothered' / 'Warm • Clear • Grounded'."
+    "native": "ONE reply. 1 sentence. Natural local speaker. Executes the action above. No formal phrasing. No over-explaining. Must pass: 'Would a real person type this in a chat?'",
+    "english": "User's perspective — what they are saying. 'I need to see it first.' / 'Can you send the contract?' Never a command directed at the user.",
+    "tone": "2–3 words. 'Direct • Calm' / 'Light • Playful' / 'Firm • Clear'."
   },
   "whatTheyWant": "",
-  "redFlag": true or false — REQUIRED,
-  "redFlagTitle": "redFlag=true: max 5 words, friend-warning tone. No 'potential', 'detected', 'classic', 'pattern'. redFlag=false: empty string.",
-  "redFlagReason": "redFlag=true: ONE sentence. Name exactly what's happening. No 'often', 'could', 'classic', 'pattern'. BAD: 'This is a classic pattern used to pressure people.' GOOD: 'They want payment before any paperwork exists.' redFlag=false: empty string.",
-  "redFlagConsequence": "redFlag=true: ONE sentence. The specific thing you lose. Name a number, a right, or a concrete outcome. BAD: 'You could face financial loss.' GOOD: 'You lose the deposit with no contract to enforce return.' redFlag=false: empty string.",
-  "redFlagAction": ["redFlag=true: specific action, max 6 words. Not 'Be careful'. BAD: 'Exercise caution with this request.' GOOD: 'Don't pay until you have a contract.' redFlag=false: empty array."],
+  "redFlag": true or false,
+  "redFlagTitle": "redFlag=true: max 4 words, plain warning. 'No contract, no protection.' redFlag=false: empty string.",
+  "redFlagReason": "redFlag=true: one line. What is happening, named directly. 'They want payment before paperwork exists.' redFlag=false: empty string.",
+  "redFlagConsequence": "redFlag=true: one line. The specific loss. 'Deposit gone, no contract to enforce.' redFlag=false: empty string.",
+  "redFlagAction": ["redFlag=true: one action, max 5 words. 'Don't pay until contract signed.' redFlag=false: empty array."],
   "longGame": [
     {
       "scenario": "Use exactly: 'If they push again' OR 'If they go quiet' OR 'If they change direction'.",
-      "action": "2–4 words. Match the conversation's energy — don't default to adversarial. E.g. 'Stay firm' / 'Give it space' / 'Ask directly' / 'Keep it light'.",
-      "reply": "A real message in the conversation's language. Tone must match the situation — not defensive unless it needs to be. Short and human."
+      "action": "2–4 words. Match situation energy. 'Stay firm' / 'Give it space' / 'Keep it light'.",
+      "reply": "One natural message in conversation language. Short. Human."
     }
   ]
 }`;
