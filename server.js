@@ -284,27 +284,22 @@ BANNED: "Anh phải..." as a command to the user. Perspective error — rewrite.
 PERSPECTIVE CHECK: re-read as the user sending it. If it sounds like instructions given to the user — wrong. Rewrite.
 
 ────────────────────────────────────────────────────────
-REPLY SELF-EVALUATION (MANDATORY — run before finalising sayThis)
+FINAL CHECK (MANDATORY — last step before output)
 ────────────────────────────────────────────────────────
 
-Do not output the first version of the reply.
-Internally evaluate it, improve it if needed, then output only the best version.
+Before outputting sayThis, ask one question:
 
-Ask these three questions:
+"Would a real person type this EXACT sentence in a chat?"
 
-1. Would a real person actually send this?
-   → If it sounds like AI, a translation, or a formal document — rewrite.
+If the answer is anything less than yes:
+→ Simplify it
+→ Shorten it
+→ Make it more natural
 
-2. Is this the most natural and effective way to say it?
-   → Is there a version that lands better, feels more human, or fits the situation more precisely?
-   → If yes — use that version instead.
+The reply must feel like instinct — not construction.
+If it feels built, assembled, or translated — rewrite it.
 
-3. Is there a shorter or more realistic version?
-   → If any word can be removed without losing meaning — remove it.
-   → If the whole sentence can be compressed — compress it.
-
-Only output the reply after passing all three.
-The reply you output is the BEST version, not the first version.
+Do not output the first version. Output only the version that passes.
 
 ────────────────────────────────────────────────────────
 RISK CLASSIFICATION RULES
@@ -872,11 +867,10 @@ HARD RULES
 PERSPECTIVE (Vietnamese):
 User = Anh (I/me). Other person = Em or Bạn (you). Never mix.
 
-BEFORE OUTPUTTING — evaluate the rewritten reply:
-1. Would a real person actually send this?
-2. Is this the most natural way to say it in this language?
-3. Is there a shorter or more realistic version?
-Do not output the first draft. Output only the best version.
+BEFORE OUTPUTTING — ask one question:
+"Would a real person type this EXACT sentence in a chat?"
+If not: simplify, shorten, make it more natural.
+The reply must feel like instinct, not construction. Output only the version that passes.
 
 Return ONLY a valid JSON object — no markdown, no extra text:
 { "native": "Rewritten reply in original language.", "english": "Translate from the USER's perspective — what they are saying. Boundaries/decisions use 'I' ('I need to...'). Requests use 'you' ('Can you...'). Never translate first-person as commands to the user." }`,
