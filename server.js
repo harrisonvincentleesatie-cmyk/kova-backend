@@ -1279,6 +1279,30 @@ Return ONLY a valid JSON object — no markdown, no extra text:
     if (typeof parsed.action !== "string" || !parsed.action.trim()) parsed.action = "MATCH_ENERGY";
     if (typeof parsed.context !== "string") parsed.context = "";
 
+    // Normalize action to strict enum
+    const ALLOWED_ACTIONS = ["USE_GRAB", "DECLINE", "EXIT", "ASK_CONTRACT", "PROCEED_WITH_CAUTION", "MATCH_ENERGY", "HOLD_PAYMENT", "HOLD_POSITION", "VERIFY_IDENTITY", "IGNORE"];
+    const ACTION_MAP = {
+      "use grab": "USE_GRAB", "grab": "USE_GRAB", "use_grab": "USE_GRAB",
+      "decline": "DECLINE", "reject": "DECLINE", "refuse": "DECLINE",
+      "exit": "EXIT", "leave": "EXIT", "end": "EXIT",
+      "ask contract": "ASK_CONTRACT", "ask_contract": "ASK_CONTRACT", "request contract": "ASK_CONTRACT",
+      "proceed with caution": "PROCEED_WITH_CAUTION", "proceed_with_caution": "PROCEED_WITH_CAUTION", "caution": "PROCEED_WITH_CAUTION",
+      "match energy": "MATCH_ENERGY", "match_energy": "MATCH_ENERGY",
+      "hold payment": "HOLD_PAYMENT", "hold_payment": "HOLD_PAYMENT",
+      "hold position": "HOLD_POSITION", "hold_position": "HOLD_POSITION",
+      "verify identity": "VERIFY_IDENTITY", "verify_identity": "VERIFY_IDENTITY",
+      "ignore": "IGNORE",
+    };
+    const rawAction = parsed.action.trim().toLowerCase();
+    const upper = parsed.action.trim().toUpperCase();
+    if (ALLOWED_ACTIONS.includes(upper)) {
+      parsed.action = upper;
+    } else if (ACTION_MAP[rawAction]) {
+      parsed.action = ACTION_MAP[rawAction];
+    } else {
+      parsed.action = "DECLINE"; // safe fallback for any unrecognized free text
+    }
+
     res.json(parsed);
 
   } catch (err) {
