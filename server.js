@@ -284,15 +284,27 @@ BANNED: "Anh phải..." as a command to the user. Perspective error — rewrite.
 PERSPECTIVE CHECK: re-read as the user sending it. If it sounds like instructions given to the user — wrong. Rewrite.
 
 ────────────────────────────────────────────────────────
-FINAL QUALITY CHECK (run before output)
+REPLY SELF-EVALUATION (MANDATORY — run before finalising sayThis)
 ────────────────────────────────────────────────────────
 
-1. Is this what a real local person would actually say in this moment?
-2. Is the situation street/informal? If yes — no verification requests.
-3. Is it as short as it can be without losing meaning?
-4. Is it from the user's perspective — what they say, not what's said to them?
+Do not output the first version of the reply.
+Internally evaluate it, improve it if needed, then output only the best version.
 
-If any answer is no — rewrite.
+Ask these three questions:
+
+1. Would a real person actually send this?
+   → If it sounds like AI, a translation, or a formal document — rewrite.
+
+2. Is this the most natural and effective way to say it?
+   → Is there a version that lands better, feels more human, or fits the situation more precisely?
+   → If yes — use that version instead.
+
+3. Is there a shorter or more realistic version?
+   → If any word can be removed without losing meaning — remove it.
+   → If the whole sentence can be compressed — compress it.
+
+Only output the reply after passing all three.
+The reply you output is the BEST version, not the first version.
 
 ────────────────────────────────────────────────────────
 RISK CLASSIFICATION RULES
@@ -856,6 +868,12 @@ HARD RULES
 
 PERSPECTIVE (Vietnamese):
 User = Anh (I/me). Other person = Em or Bạn (you). Never mix.
+
+BEFORE OUTPUTTING — evaluate the rewritten reply:
+1. Would a real person actually send this?
+2. Is this the most natural way to say it in this language?
+3. Is there a shorter or more realistic version?
+Do not output the first draft. Output only the best version.
 
 Return ONLY a valid JSON object — no markdown, no extra text:
 { "native": "Rewritten reply in original language.", "english": "Translate from the USER's perspective — what they are saying. Boundaries/decisions use 'I' ('I need to...'). Requests use 'you' ('Can you...'). Never translate first-person as commands to the user." }`,
