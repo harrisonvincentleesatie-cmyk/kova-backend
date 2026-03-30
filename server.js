@@ -1291,20 +1291,13 @@ Return ONLY a valid JSON object — no markdown, no extra text:
 
 app.post("/reply", async (req, res) => {
   try {
-    const { action, language, context } = req.body;
+    const { action, language } = req.body;
 
     const response = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         { role: "system", content: replySystemPrompt },
-        {
-          role: "user",
-          content: [
-            `Action: ${action}`,
-            `Language: ${language || "detect from action context"}`,
-            context ? `Context: ${context}` : "",
-          ].filter(Boolean).join("\n"),
-        },
+        { role: "user", content: `Action: ${action}\nLanguage: ${language}` },
       ],
     });
 
