@@ -1034,19 +1034,27 @@ ${coreRules}`;
     const lockedAction  = decision.action   || "MATCH_ENERGY";
     const replyLanguage = decision.language || "english";
 
-    const replyResponse = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: replySystemPrompt },
-        {
-          role: "user",
-          content: `Action: ${lockedAction}\nLanguage: ${replyLanguage}`,
-        },
-      ],
-    });
+    // Direct mapping for core actions — no AI call
+    const STATIC_REPLIES = {
+      USE_GRAB:     { native: "Anh đi Grab, cảm ơn.",              english: "I'll just use Grab, thanks." },
+      DECLINE:      { native: "Không, cảm ơn.",                    english: "No thanks." },
+      EXIT:         { native: "Không phù hợp, anh không tiếp.",    english: "Not for me, I'm done here." },
+      ASK_CONTRACT: { native: "Anh cần xem hợp đồng trước nhé.",   english: "I need to see the contract first." },
+    };
 
-    const rawReply = replyResponse.choices[0].message.content;
-    const replyResult = parseJSON(rawReply, { native: "", english: "" });
+    let replyResult;
+    if (STATIC_REPLIES[lockedAction]) {
+      replyResult = STATIC_REPLIES[lockedAction];
+    } else {
+      const replyResponse = await client.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: replySystemPrompt },
+          { role: "user", content: `Action: ${lockedAction}\nLanguage: ${replyLanguage}` },
+        ],
+      });
+      replyResult = parseJSON(replyResponse.choices[0].message.content, { native: "", english: "" });
+    }
 
     // Attach reply to parsed — sayThis comes ONLY from Phase 2
     parsed.sayThis = {
