@@ -969,36 +969,16 @@ ${coreRules}`;
     }
     userContent.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}` } });
 
-    // ── Phase 1: analysis + decision ─────────────────────────────────────────
-    const jsonSchemaAnalysis = `OUTPUT STANDARD: every text field must be instantly readable — no filler, no padding. If the user can't understand a field in 3 seconds, it's too long.
+    // ── Analysis ──────────────────────────────────────────────────────────────
+    const jsonSchemaAnalysis = `Return ONLY a valid JSON object — no markdown, no extra text:
 
 {
   "whatTheySaid": "Non-English only: exact original text. English: empty string.",
-  "whatTheyMean": "Non-English only: one sharp line — what they said AND what they actually mean. English: empty string.",
-  "summary": "Max 6 words. The single most important thing. No pronoun.",
-  "whatThisReallyMeans": "One line. Real intent, said directly. No hedging.",
-  "impactLine": "One line. What breaks if you don't act. redFlag=true: empty string.",
-  "riskLevel": "Low" or "Medium" or "High" — apply RISK CLASSIFICATION RULES.",
-  "riskRead": "Under 8 words. The actual risk, named plainly.",
-  "whatToDo": ["ONE action only. Max 5 words. Decisive, immediately usable.", "", ""],
-  "whatTheyWant": "",
-  "redFlag": true or false,
-  "redFlagTitle": "redFlag=true: max 4 words, plain warning. redFlag=false: empty string.",
-  "redFlagReason": "redFlag=true: one line. What is happening, named directly. redFlag=false: empty string.",
-  "redFlagConsequence": "redFlag=true: one line. The specific loss. redFlag=false: empty string.",
-  "redFlagAction": ["redFlag=true: one action, max 5 words. redFlag=false: empty array."],
-  "longGame": [
-    {
-      "scenario": "Use exactly: 'If they push again' OR 'If they go quiet' OR 'If they change direction'.",
-      "action": "2–4 words. Match situation energy.",
-      "reply": "One natural message in conversation language. Short. Human."
-    }
-  ],
-  "decision": {
-    "primaryGoal": "AVOID" or "VERIFY" or "NEGOTIATE" or "SOCIAL",
-    "action": "USE_GRAB or DECLINE or ASK_CONTRACT or EXIT or VERIFY_IDENTITY or HOLD_PAYMENT or HOLD_POSITION or MATCH_ENERGY or IGNORE — or short descriptive action",
-    "language": "The conversation language as a single word (e.g. vietnamese, english, thai, spanish)"
-  }
+  "whatTheyMean": "Non-English only: plain translation + real intent in one line. English: empty string.",
+  "riskLevel": "Low" | "Medium" | "High",
+  "meaning": "1–2 lines max. What is actually happening and why it matters. No filler.",
+  "recommendedAction": "USE_GRAB" | "DECLINE" | "EXIT" | "ASK_CONTRACT" | "PROCEED_WITH_CAUTION" | "MATCH_ENERGY" | "HOLD_PAYMENT" | "HOLD_POSITION" | "VERIFY_IDENTITY" | "IGNORE",
+  "language": "The conversation language as a single word (e.g. vietnamese, english, thai, spanish)"
 }`;
 
     const analysisResponse = await client.chat.completions.create({
@@ -1011,101 +991,110 @@ ${coreRules}`;
 
     const rawAnalysis = analysisResponse.choices[0].message.content;
     const parsed = parseJSON(rawAnalysis, {
-      summary: "Could not read the image.",
-      whatThisReallyMeans: "Could not read the image clearly.",
-      impactLine: "Try uploading a clearer screenshot.",
+      whatTheySaid: "",
+      whatTheyMean: "",
       riskLevel: "Low",
-      riskRead: "Unable to assess — image may be unreadable.",
-      whatToDo: ["Upload a clearer screenshot", "Ensure text is visible", "Try again"],
-      sayThis: { native: "Unable to generate a reply.", english: "Unable to generate a reply.", tone: "" },
-      whatTheyWant: "Unknown.",
-      redFlag: false,
-      redFlagTitle: "",
-      redFlagReason: "",
-      redFlagConsequence: "",
-      redFlagAction: [],
-      longGame: [],
-      decision: { primaryGoal: "SOCIAL", action: "MATCH_ENERGY", language: "english" },
+      meaning: "Could not read the image.",
+      recommendedAction: "DECLINE",
+      language: "english",
     });
 
-    // ── Phase 2: reply generation from locked action ──────────────────────────
-    const decision = (parsed.decision && typeof parsed.decision === "object") ? parsed.decision : {};
-    console.log("DECISION:", decision);
-    let lockedAction = (decision.action || "MATCH_ENERGY").toUpperCase().replace(/\s+/g, "_");
-    const replyLanguage = decision.language || "english";
-
-    // Direct mapping for core actions — no AI call
-    const STATIC_REPLIES = {
-      USE_GRAB:     { native: "Anh đi Grab, cảm ơn.",              english: "I'll just use Grab, thanks." },
-      DECLINE:      { native: "Không, cảm ơn.",                    english: "No thanks." },
-      EXIT:         { native: "Không phù hợp, anh không tiếp.",    english: "Not for me, I'm done here." },
-      ASK_CONTRACT: { native: "Anh cần xem hợp đồng trước nhé.",   english: "I need to see the contract first." },
-    };
-
-    let replyResult;
-    if (STATIC_REPLIES[lockedAction]) {
-      replyResult = STATIC_REPLIES[lockedAction];
-    } else {
-      const replyResponse = await client.chat.completions.create({
-        model: "gpt-4.1-mini",
-        messages: [
-          { role: "system", content: replySystemPrompt },
-          { role: "user", content: `Action: ${lockedAction}\nLanguage: ${replyLanguage}` },
-        ],
-      });
-      replyResult = parseJSON(replyResponse.choices[0].message.content, { native: "", english: "" });
-    }
-
-    // Attach reply to parsed — sayThis comes ONLY from Phase 2
-    parsed.sayThis = {
-      native:  typeof replyResult.native  === "string" ? replyResult.native  : "",
-      english: typeof replyResult.english === "string" ? replyResult.english : "",
-      tone:    parsed.sayThis?.tone || "",
-    };
-
-    // Expose decision fields at top level
-    parsed.primaryGoal = decision.primaryGoal || "SOCIAL";
-    delete parsed.decision;
-
-    // Sanitise — guarantee every field the frontend depends on
+    // Sanitise
     if (typeof parsed.whatTheySaid !== "string") parsed.whatTheySaid = "";
     if (typeof parsed.whatTheyMean !== "string") parsed.whatTheyMean = "";
-    if (typeof parsed.redFlag !== "boolean") parsed.redFlag = false;
-    if (!parsed.redFlagTitle)     parsed.redFlagTitle = "";
-    if (!parsed.redFlagReason)    parsed.redFlagReason = "";
-    if (!parsed.redFlagConsequence) parsed.redFlagConsequence = "";
-    if (!Array.isArray(parsed.whatToDo)) parsed.whatToDo = [];
-    parsed.whatToDo = dedupeWhatToDo(parsed.whatToDo);
-    if (!Array.isArray(parsed.redFlagAction)) parsed.redFlagAction = [];
-    if (!parsed.riskLevel)        parsed.riskLevel = "Low";
-    if (!parsed.sayThis || typeof parsed.sayThis !== "object") {
-      parsed.sayThis = { native: "", english: "", tone: "" };
-    }
-    if (!parsed.sayThis.tone)     parsed.sayThis.tone = "";
-    if (!Array.isArray(parsed.longGame)) parsed.longGame = [];
-    parsed.longGame = parsed.longGame.filter(
-      (m) => m && typeof m.scenario === "string" && typeof m.action === "string" && typeof m.reply === "string"
-    );
+    if (!["Low", "Medium", "High"].includes(parsed.riskLevel)) parsed.riskLevel = "Low";
+    if (typeof parsed.meaning !== "string" || !parsed.meaning.trim()) parsed.meaning = "";
+    if (typeof parsed.recommendedAction !== "string") parsed.recommendedAction = "DECLINE";
+    parsed.recommendedAction = parsed.recommendedAction.toUpperCase().replace(/\s+/g, "_");
+    if (typeof parsed.language !== "string") parsed.language = "english";
 
     res.json(parsed);
 
   } catch (err) {
     console.error("/analyze error:", err.message);
     res.json({
-      whatThisReallyMeans: "The backend encountered an error.",
-      impactLine: err.message,
+      whatTheySaid: "",
+      whatTheyMean: "",
       riskLevel: "Low",
-      redFlag: false,
-      redFlagTitle: "",
-      redFlagReason: "",
-      redFlagConsequence: "",
-      redFlagAction: [],
-      longGame: [],
-      riskRead: "This is a technical error, not a real risk assessment.",
-      whatToDo: ["Check Render logs", "Verify OPENAI_API_KEY is set", "Try again"],
-      sayThis: { native: "There was an error. Please try again.", english: "There was an error. Please try again." },
-      whatTheyWant: "System error.",
+      meaning: "Backend error — please try again.",
+      recommendedAction: "DECLINE",
+      language: "english",
     });
+  }
+});
+
+// ── /respond — user-driven reply generation ───────────────────────────────────
+
+app.post("/respond", async (req, res) => {
+  try {
+    const { userIntent, language, context } = req.body;
+    const { riskLevel = "Low", meaning = "", recommendedAction = "" } = context || {};
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You generate reply options for a user in a real conversation.
+
+You are NOT translating. You are interpreting what the user wants to achieve and producing natural phrasing a local speaker would actually send.
+
+────────────────────────────────────────────────────────
+RULES
+────────────────────────────────────────────────────────
+
+- Generate exactly 3 reply options
+- Each reply: 1 sentence max, natural chat language
+- Match the tone and register of the target language
+- DO NOT translate the user's input literally
+- DO NOT use formal or robotic phrasing
+- Interpret intent — produce the result, not the words
+
+Risk awareness:
+- riskLevel = High or Medium → replies must stay cautious, no over-engagement
+- riskLevel = Low → replies can be open and natural
+
+────────────────────────────────────────────────────────
+LANGUAGE
+────────────────────────────────────────────────────────
+
+Reply in the language specified. Match how real people actually write in that language.
+
+Vietnamese: casual particles (nhé, đi, vậy), Anh/Em pronouns, short sentences.
+English: contractions fine, incomplete sentences fine.
+Other: match register and rhythm of that language exactly.
+
+────────────────────────────────────────────────────────
+OUTPUT
+────────────────────────────────────────────────────────
+
+Return ONLY a valid JSON object — no markdown, no extra text:
+{
+  "replies": [
+    { "native": "Reply in conversation language.", "english": "English translation from user's perspective." },
+    { "native": "...", "english": "..." },
+    { "native": "...", "english": "..." }
+  ]
+}`,
+        },
+        {
+          role: "user",
+          content: `User intent: "${userIntent}"\nLanguage: ${language}\nSituation: ${meaning}\nRisk: ${riskLevel}\nRecommended action: ${recommendedAction}`,
+        },
+      ],
+    });
+
+    const raw = response.choices[0].message.content;
+    const parsed = parseJSON(raw, { replies: [] });
+    if (!Array.isArray(parsed.replies)) parsed.replies = [];
+    parsed.replies = parsed.replies.filter(
+      (r) => r && typeof r.native === "string" && typeof r.english === "string"
+    );
+    res.json(parsed);
+
+  } catch (err) {
+    console.error("/respond error:", err.message);
+    res.json({ replies: [] });
   }
 });
 
